@@ -1,0 +1,172 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* FullCalendar Base Styles */
+.fc {
+  @apply font-sans;
+}
+
+.fc .fc-toolbar.fc-header-toolbar {
+  @apply mb-4 px-4;
+}
+
+.fc .fc-toolbar-title {
+  @apply text-xl font-semibold text-gray-900;
+}
+
+/* Botones de navegación */
+.fc .fc-button {
+  @apply bg-white text-gray-700 border border-gray-300 rounded-md shadow-sm px-4 py-2 text-sm font-medium transition-colors;
+}
+
+.fc .fc-button:hover {
+  @apply bg-gray-50 text-gray-900;
+}
+
+.fc .fc-button:focus {
+  @apply outline-none ring-2 ring-offset-2 ring-primary-500;
+}
+
+.fc .fc-button-primary:not(:disabled).fc-button-active,
+.fc .fc-button-primary:not(:disabled):active {
+  @apply bg-primary-50 text-primary-700 border-primary-200;
+}
+
+.fc .fc-button-primary:disabled {
+  @apply opacity-50 cursor-not-allowed;
+}
+
+.fc .fc-daygrid-day.fc-day-today,
+.fc .fc-timegrid-col.fc-day-today {
+  @apply bg-primary-50;
+}
+
+.fc .fc-daygrid-day-number,
+.fc .fc-col-header-cell-cushion {
+  @apply text-gray-900;
+}
+
+.fc .fc-timegrid-slot-label {
+  @apply text-gray-500 text-sm;
+}
+
+.fc-direction-ltr .fc-daygrid-event.fc-event-end,
+.fc-direction-ltr .fc-daygrid-event.fc-event-start {
+  @apply rounded-md;
+}
+
+/* Eventos del calendario */
+.fc-event {
+  @apply cursor-pointer transition-all;
+}
+
+.fc-event:hover {
+  @apply brightness-110 shadow-md;
+}
+
+.fc-event .fc-event-main,
+.fc-event .fc-event-time,
+.fc-event .fc-event-title {
+  @apply text-white transition-colors font-medium;
+}
+
+.fc-event:hover .fc-event-main,
+.fc-event:hover .fc-event-time,
+.fc-event:hover .fc-event-title {
+  @apply text-white font-semibold;
+}
+
+/* Estilos para mostrar la descripción del evento */
+.event-with-description {
+  @apply relative;
+}
+
+.event-with-description::after {
+  content: attr(data-description);
+  @apply absolute left-0 top-full z-50 hidden w-48 rounded-md bg-gray-800 p-2 text-xs text-white shadow-lg;
+}
+
+.event-with-description:hover::after {
+  @apply block;
+}
+
+.fc-event-main {
+  @apply p-1 text-sm;
+}
+
+.fc-h-event {
+  @apply border-none;
+}
+
+.fc .fc-timegrid-slot {
+  @apply h-12;
+}
+
+/* FullCalendar Grid Styles */
+.fc-scrollgrid {
+  @apply border-gray-200;
+}
+
+.fc-scrollgrid-section-header th {
+  @apply border-gray-200 bg-gray-50;
+}
+
+.fc-timegrid-slot-minor {
+  @apply border-gray-100;
+}
+
+.fc-timegrid-slot-label-cushion {
+  @apply text-gray-500;
+}
+
+.fc-timegrid-now-indicator-line {
+  @apply border-red-500;
+}
+
+.fc-timegrid-now-indicator-arrow {
+  @apply border-red-500;
+}
+
+/* Event Styles */
+.fc-event-time {
+  @apply text-xs font-medium;
+}
+
+.fc-event-title {
+  @apply text-xs font-medium;
+}
+
+.fc-event-main-frame {
+  @apply p-1;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .fc .fc-toolbar {
+    @apply flex-col gap-2;
+  }
+  
+  .fc .fc-toolbar-title {
+    @apply text-lg;
+  }
+  
+  .fc .fc-button {
+    @apply px-2 py-1 text-xs;
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .fc .fc-toolbar {
+    @apply flex-col gap-2;
+  }
+  
+  .fc .fc-toolbar-title {
+    @apply text-lg;
+  }
+  
+  .fc .fc-button {
+    @apply px-2 py-1 text-xs;
+  }
+}

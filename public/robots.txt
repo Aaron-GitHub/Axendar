@@ -1,0 +1,11 @@
+# Axendar - Sistema de Gestión de Reservas
+User-agent: *
+Allow: /
+Allow: /landing
+Allow: /onboarding
+Allow: /auth
+Disallow: /api/
+Disallow: /admin/
+
+# Sitemap
+Sitemap: https://axendar.com/sitemap.xml
