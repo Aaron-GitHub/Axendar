@@ -9,6 +9,7 @@ import ClientDataForm, { ClientFormData } from './ClientDataForm'
 import BookingSummary from './BookingSummary'
 import BookingSuccess from './BookingSuccess'
 import { createBooking } from '../../services/bookingService'
+import ConfirmationModal from '../ui/ConfirmationModal'
 
 interface BookingStepperProps {
   userId: string
@@ -44,9 +45,10 @@ const STEPS = [
   { id: 'success', title: 'Éxito' }
 ]
 
-const BookingStepper: React.FC<BookingStepperProps> = ({ userId, onComplete, onCancel, onDetailsChange }) => {
+const BookingStepper: React.FC<BookingStepperProps> = ({ userId, onComplete, onDetailsChange }) => {
   const [currentStep, setCurrentStep] = useState(0)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false)
   const [bookingData, setBookingData] = useState<BookingData>({
     service: null,
     professional: null,
@@ -54,6 +56,36 @@ const BookingStepper: React.FC<BookingStepperProps> = ({ userId, onComplete, onC
     time: null,
     clientData: null
   })
+
+  const resetForm = () => {
+    setCurrentStep(0)
+    setBookingData({
+      service: null,
+      professional: null,
+      date: null,
+      time: null,
+      clientData: null
+    })
+    // Notificar al componente padre del cambio en los detalles
+    if (onDetailsChange) {
+      onDetailsChange({
+        service: undefined,
+        professional: undefined,
+        date: undefined,
+        time: undefined
+      })
+    }
+  }
+
+  const handleCancel = () => {
+    // Si hay datos ingresados, mostrar confirmación
+    if (bookingData.service || bookingData.professional || bookingData.date || bookingData.time || bookingData.clientData) {
+      setShowCancelConfirm(true)
+    } else {
+      // Si no hay datos, reiniciar directamente
+      resetForm()
+    }
+  }
 
 
 
@@ -88,7 +120,8 @@ const BookingStepper: React.FC<BookingStepperProps> = ({ userId, onComplete, onC
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-2 sm:px-6 lg:px-8">
+    <>
+      <div className="max-w-4xl mx-auto px-2 sm:px-6 lg:px-8">
       {/* Stepper Header */}
       <div className="mb-8">
         <div className="flex items-center justify-between">
@@ -223,24 +256,7 @@ const BookingStepper: React.FC<BookingStepperProps> = ({ userId, onComplete, onC
           )}
           {currentStep === 5 && (
             <BookingSuccess
-              onNewBooking={() => {
-                // Reiniciar el stepper
-                setCurrentStep(0)
-                setBookingData({
-                  service: null,
-                  professional: null,
-                  date: null,
-                  time: null,
-                  clientData: null
-                })
-                updateBookingData({
-                  service: null,
-                  professional: null,
-                  date: null,
-                  time: null,
-                  clientData: null
-                })
-              }}
+              onNewBooking={resetForm}
             />
           )}
         </div>
@@ -249,7 +265,7 @@ const BookingStepper: React.FC<BookingStepperProps> = ({ userId, onComplete, onC
         <div className="mt-8 flex justify-between gap-4">
           {currentStep !== 5 && (
             <button
-              onClick={currentStep === 0 ? onCancel : handleBack}
+              onClick={currentStep === 0 ? handleCancel : handleBack}
               disabled={isSubmitting}
               className="px-3 sm:px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
             >
@@ -269,9 +285,23 @@ const BookingStepper: React.FC<BookingStepperProps> = ({ userId, onComplete, onC
         </div>
       </div>
     </div>
+
+    {/* Modal de confirmación para cancelar */}
+    <ConfirmationModal
+      isOpen={showCancelConfirm}
+      onClose={() => setShowCancelConfirm(false)}
+      onConfirm={() => {
+        setShowCancelConfirm(false)
+        resetForm()
+      }}
+      title="Cancelar Reserva"
+      message="¿Estás seguro que deseas cancelar la reserva? Se perderán todos los datos ingresados."
+      confirmText="Sí, Cancelar"
+      cancelText="No, Continuar"
+      confirmVariant="danger"
+    />
+  </>
   )
 }
-
-
 
 export default BookingStepper

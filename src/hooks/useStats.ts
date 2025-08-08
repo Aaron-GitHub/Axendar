@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { User } from '@supabase/supabase-js'
 
@@ -26,64 +26,66 @@ export interface Stats {
 }
 
 interface RevenueData {
-    name: string
-    revenue: number
-  }
-  
-  interface TrendData {
-    name: string
-    pending: number
-    completed: number
-    cancelled: number
-  }
+  name: string
+  revenue: number
+}
 
-export const useStats = (user: User | null, dateFilter: 'day' | 'week' | 'month' | 'year' = 'month') => {
+interface TrendData {
+  name: string
+  pending: number
+  completed: number
+  cancelled: number
+}
+
+export const useStats = (user: User | null) => {
+  // Estados
   const [stats, setStats] = useState<Stats | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
   const [lastUpdated, setLastUpdated] = useState(new Date())
-
   const [revenueData, setRevenueData] = useState<RevenueData[]>([])
-    const [reservationTrends, setReservationTrends] = useState<TrendData[]>([])
+  const [reservationTrends, setReservationTrends] = useState<TrendData[]>([])
 
-    useEffect(() => {
-        if (stats) {
-          // Generar datos de ingresos basados en los últimos 6 meses
-          const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun']
-          const revenueMultipliers = [1, 0.9, 0.85, 1.1, 0.95, 1.2]
-          
-          setRevenueData(
-            months.map((month, index) => ({
-              name: month,
-              revenue: Math.round((stats.monthlyRevenue || 0) * revenueMultipliers[index])
-            }))
-          )
+  // Referencias
+  const initialLoadRef = useRef(false)
+
+  // Funciones auxiliares
+  const calculateChange = useCallback((current: number, previous: number): number => {
+    if (previous === 0) return 0
+    const change = ((current - previous) / previous) * 100
+    return Math.max(Math.min(change, 100), -100)
+  }, [])
+
+  // Función para generar datos de tendencia
+  const generateTrendData = useCallback(() => {
+    if (!stats) return
+
+    const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun']
+    const revenueMultipliers = [1, 0.9, 0.85, 1.1, 0.95, 1.2]
     
-          // Generar datos de reservas por estado para cada día
-          const days = ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom']
-          const pendingMultipliers = [0.2, 0.15, 0.18, 0.2, 0.25, 0.3, 0.15]
-          const completedMultipliers = [0.15, 0.2, 0.25, 0.15, 0.2, 0.3, 0.2]
-          const cancelledMultipliers = [0.1, 0.08, 0.12, 0.1, 0.15, 0.2, 0.1]
-          
-          setReservationTrends(
-            days.map((day, index) => ({
-              name: day,
-              pending: Math.round((stats.pendingReservations || 0) * pendingMultipliers[index]),
-              completed: Math.round((stats.completedReservations || 0) * completedMultipliers[index]),
-              cancelled: Math.round((stats.cancelledReservations || 0) * cancelledMultipliers[index])
-            }))
-          )
-        }
-      }, [stats])
+    setRevenueData(
+      months.map((month, index) => ({
+        name: month,
+        revenue: Math.round((stats.monthlyRevenue || 0) * revenueMultipliers[index])
+      }))
+    )
 
+    const days = ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom']
+    const pendingMultipliers = [0.2, 0.15, 0.18, 0.2, 0.25, 0.3, 0.15]
+    const completedMultipliers = [0.15, 0.2, 0.25, 0.15, 0.2, 0.3, 0.2]
+    const cancelledMultipliers = [0.1, 0.08, 0.12, 0.1, 0.15, 0.2, 0.1]
+    
+    setReservationTrends(
+      days.map((day, index) => ({
+        name: day,
+        pending: Math.round((stats.pendingReservations || 0) * pendingMultipliers[index]),
+        completed: Math.round((stats.completedReservations || 0) * completedMultipliers[index]),
+        cancelled: Math.round((stats.cancelledReservations || 0) * cancelledMultipliers[index])
+      }))
+    )
+  }, [stats])
 
-  useEffect(() => {
-    if (user) {
-      fetchStats()
-    }
-  }, [user, dateFilter])
-
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     if (!user) return
 
     try {
@@ -94,140 +96,121 @@ export const useStats = (user: User | null, dateFilter: 'day' | 'week' | 'month'
       const currentDate = new Date()
       const today = currentDate.toISOString().split('T')[0]
       const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1)
-
-      // Today's revenue
-      const { data: todayReservations } = await supabase
-        .from('reservations')
-        .select('total_amount')
-        .eq('user_id', user.id)
-        .gte('start_time', today)
-        .eq('status', 'completed')
-
-      const todayRevenue = todayReservations?.reduce((sum, r) => sum + r.total_amount, 0) || 0
-
-      // Current month revenue
-      const { data: monthReservations } = await supabase
-        .from('reservations')
-        .select('total_amount')
-        .eq('user_id', user.id)
-        .gte('start_time', firstDayOfMonth.toISOString())
-        .eq('status', 'completed')
-
-      const monthlyRevenue = monthReservations?.reduce((sum, r) => sum + r.total_amount, 0) || 0
-
-      // Previous month revenue for comparison
       const prevMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1)
       const startOfPrevMonth = prevMonth.toISOString()
-      const endOfPrevMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 0).toISOString()
-      
-      const { data: prevMonthReservations } = await supabase
-        .from('reservations')
-        .select('total_amount')
-        .eq('user_id', user.id)
-        .gte('start_time', startOfPrevMonth)
-        .lte('start_time', endOfPrevMonth)
-        .eq('status', 'completed')
 
-      const prevMonthRevenue = prevMonthReservations?.reduce((sum, r) => sum + r.total_amount, 0) || 0
-      const revenueChange = prevMonthRevenue ? ((monthlyRevenue - prevMonthRevenue) / prevMonthRevenue * 100) : 0
-
-      // Previous month reservations for comparison
-      const { count: prevMonthCount } = await supabase
+      // Consulta consolidada para reservas
+      const { data: reservationsStats } = await supabase
         .from('reservations')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .gte('start_time', startOfPrevMonth)
-        .lte('start_time', endOfPrevMonth)
-
-      const { count: prevMonthCompleted } = await supabase
-        .from('reservations')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .gte('start_time', startOfPrevMonth)
-        .lte('start_time', endOfPrevMonth)
-        .eq('status', 'completed')
-        
-      const prevMonthCountSafe = prevMonthCount || 0
-      const prevMonthCompletedSafe = prevMonthCompleted || 0
-
-      // Total reservations
-      const { count: totalReservations } = await supabase
-        .from('reservations')
-        .select('*', { count: 'exact' })
+        .select(`
+          status,
+          total_amount,
+          start_time
+        `)
         .eq('user_id', user.id)
 
-      // Completed reservations
-      const { count: completedReservations } = await supabase
-        .from('reservations')
-        .select('*', { count: 'exact' })
-        .eq('user_id', user.id)
-        .eq('status', 'completed')
+      // Procesar datos de reservas
+      const stats = reservationsStats?.reduce((acc, r) => {
+        const isToday = r.start_time.startsWith(today)
+        const isThisMonth = r.start_time >= firstDayOfMonth.toISOString()
+        const isPrevMonth = r.start_time >= startOfPrevMonth && r.start_time < firstDayOfMonth.toISOString()
+        const isCompleted = r.status === 'completed'
 
-      // Pending reservations
-      const { count: pendingReservations } = await supabase
-        .from('reservations')
-        .select('*', { count: 'exact' })
-        .eq('user_id', user.id)
-        .eq('status', 'pending')
+        // Actualizar contadores
+        if (isToday && isCompleted) acc.todayRevenue += r.total_amount
+        if (isThisMonth && isCompleted) acc.monthlyRevenue += r.total_amount
+        if (isPrevMonth && isCompleted) acc.prevMonthRevenue += r.total_amount
 
-      // Cancelled reservations
-      const { count: cancelledReservations } = await supabase
-        .from('reservations')
-        .select('*', { count: 'exact' })
-        .eq('user_id', user.id)
-        .eq('status', 'cancelled')
+        // Contadores del mes actual
+        if (isThisMonth) {
+          acc.thisMonthTotal++
+          if (r.status === 'completed') acc.thisMonthCompleted++
+          if (r.status === 'pending') acc.thisMonthPending++
+          if (r.status === 'cancelled') acc.thisMonthCancelled++
+        }
 
-      // Active clients
-      const { count: activeClients } = await supabase
+        // Contadores del mes anterior
+        if (isPrevMonth) {
+          acc.prevMonthTotal++
+          if (r.status === 'completed') acc.prevMonthCompleted++
+        }
+
+        // Contadores totales
+        acc.totalReservations++
+        if (r.status === 'completed') acc.completedReservations++
+        if (r.status === 'pending') acc.pendingReservations++
+        if (r.status === 'cancelled') acc.cancelledReservations++
+
+        return acc
+      }, {
+        todayRevenue: 0,
+        monthlyRevenue: 0,
+        prevMonthRevenue: 0,
+        thisMonthTotal: 0,
+        thisMonthCompleted: 0,
+        thisMonthPending: 0,
+        thisMonthCancelled: 0,
+        prevMonthTotal: 0,
+        prevMonthCompleted: 0,
+        totalReservations: 0,
+        completedReservations: 0,
+        pendingReservations: 0,
+        cancelledReservations: 0
+      })
+
+      // Consulta consolidada para clientes
+      const { data: clientStats } = await supabase
         .from('clients')
-        .select('*', { count: 'exact' })
+        .select('created_at')
         .eq('user_id', user.id)
 
-      // New clients this month
-      const { count: newClientsThisMonth } = await supabase
-        .from('clients')
-        .select('*', { count: 'exact' })
-        .eq('user_id', user.id)
-        .gte('created_at', firstDayOfMonth.toISOString())
+      const clientCounts = clientStats?.reduce((acc, client) => {
+        acc.activeClients++
+        if (client.created_at >= firstDayOfMonth.toISOString()) {
+          acc.newClientsThisMonth++
+        }
+        return acc
+      }, { activeClients: 0, newClientsThisMonth: 0 })
 
       // Calculate metrics
-      const totalRevenue = monthlyRevenue
-      const averageRevenue = completedReservations ? totalRevenue / completedReservations : 0
+      const totalRevenue = stats?.monthlyRevenue || 0
+      const averageRevenue = stats?.completedReservations ? totalRevenue / stats.completedReservations : 0
 
-      // Función para calcular cambios de manera segura
-      const calculateChange = (current: number, previous: number): number => {
-        if (previous === 0) return 0 // Si no había datos previos, retornamos 0 (sin cambios)
-        const change = ((current - previous) / previous) * 100
-        return Math.max(Math.min(change, 100), -100) // Limitamos entre -100% y +100%
-      }
-
-      const totalChange = calculateChange(totalReservations || 0, prevMonthCountSafe)
-      const completedChange = calculateChange(completedReservations || 0, prevMonthCompletedSafe)
-      const pendingChange = calculateChange(pendingReservations || 0, prevMonthCountSafe - prevMonthCompletedSafe)
-      const cancelledChange = calculateChange(cancelledReservations || 0, prevMonthCountSafe - prevMonthCompletedSafe)
+      const totalChange = calculateChange(stats?.thisMonthTotal || 0, stats?.prevMonthTotal || 0)
+      const completedChange = calculateChange(stats?.thisMonthCompleted || 0, stats?.prevMonthCompleted || 0)
+      const pendingChange = calculateChange(
+        stats?.thisMonthPending || 0,
+        ((stats?.prevMonthTotal || 0) - (stats?.prevMonthCompleted || 0))
+      )
+      const cancelledChange = calculateChange(
+        stats?.thisMonthCancelled || 0,
+        ((stats?.prevMonthTotal || 0) - (stats?.prevMonthCompleted || 0))
+      )
       
-      const conversionRate = totalReservations ? ((completedReservations || 0) / totalReservations) * 100 : 0
-      const prevConversionRate = prevMonthCountSafe > 0 ? (prevMonthCompletedSafe / prevMonthCountSafe) * 100 : 0
+      const conversionRate = stats?.totalReservations ? 
+        ((stats?.completedReservations || 0) / stats.totalReservations) * 100 : 0
+      const prevConversionRate = (stats?.prevMonthTotal || 0) > 0 ? 
+        ((stats?.prevMonthCompleted || 0) / (stats?.prevMonthTotal || 0)) * 100 : 0
       const conversionRateChange = calculateChange(conversionRate, prevConversionRate)
-      const occupancyRate = totalReservations ? (completedReservations || 0 / totalReservations || 0 * 100) : 0
+      const occupancyRate = stats?.totalReservations ? (stats.completedReservations || 0 / stats.totalReservations || 0 * 100) : 0
 
       setStats({
-        todayRevenue,
-        monthlyRevenue,
+        todayRevenue: stats?.todayRevenue || 0,
+        monthlyRevenue: stats?.monthlyRevenue || 0,
         totalRevenue,
         averageRevenue,
-        totalRevenueChange: revenueChange,
-        totalReservations: totalReservations || 0,
-        completedReservations: completedReservations || 0,
-        pendingReservations: pendingReservations || 0,
-        cancelledReservations: cancelledReservations || 0,
+        totalRevenueChange: calculateChange(stats?.monthlyRevenue || 0, stats?.prevMonthRevenue || 0),
+        totalReservations: stats?.totalReservations || 0,
+        completedReservations: stats?.completedReservations || 0,
+        pendingReservations: stats?.pendingReservations || 0,
+        cancelledReservations: stats?.cancelledReservations || 0,
         totalChange,
         completedChange,
         pendingChange,
         cancelledChange,
-        activeClients: activeClients || 0,
+        activeClients: clientCounts?.activeClients || 0,
         activeClientsChange: 0, // TODO: Implementar cálculo de cambio
-        newClientsThisMonth: newClientsThisMonth || 0,
+        newClientsThisMonth: clientCounts?.newClientsThisMonth || 0,
         conversionRate,
         conversionRateChange,
         occupancyRate,
@@ -241,11 +224,177 @@ export const useStats = (user: User | null, dateFilter: 'day' | 'week' | 'month'
     } finally {
       setLoading(false)
     }
-  }
+  }, [user, calculateChange])
 
-  const refresh = () => {
+  // Efecto para actualizar datos de tendencia cuando cambian las estadísticas
+  useEffect(() => {
+    generateTrendData()
+  }, [generateTrendData])
+
+  // Efecto único para carga inicial y suscripción
+  useEffect(() => {
+    if (!user?.id) return
+
+    // Carga inicial solo una vez
+    if (!initialLoadRef.current) {
+      initialLoadRef.current = true
+      fetchStats()
+    }
+
+    // Suscripción en tiempo real a cambios en reservas y clientes
+    const reservationsSubscription = supabase
+      .channel('dashboard_reservations_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'reservations',
+          filter: `user_id=eq.${user.id}`
+        },
+        () => {
+          console.log('Reservation change detected, updating stats...')
+          fetchStats()
+        }
+      )
+      .subscribe()
+
+    const clientsSubscription = supabase
+      .channel('dashboard_clients_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'clients',
+          filter: `user_id=eq.${user.id}`
+        },
+        () => {
+          console.log('Client change detected, updating stats...')
+          fetchStats()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      reservationsSubscription.unsubscribe()
+      clientsSubscription.unsubscribe()
+    }
+  }, [user?.id, fetchStats])
+
+  // Efecto único para carga inicial y suscripción
+  useEffect(() => {
+    if (!user?.id) return
+
+    // Carga inicial solo una vez
+    if (!initialLoadRef.current) {
+      initialLoadRef.current = true
+      fetchStats()
+    }
+
+    // Suscripción en tiempo real a cambios en reservas y clientes
+    const reservationsSubscription = supabase
+      .channel('dashboard_reservations_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'reservations',
+          filter: `user_id=eq.${user.id}`
+        },
+        () => {
+          console.log('Reservation change detected, updating stats...')
+          fetchStats()
+        }
+      )
+      .subscribe()
+
+    const clientsSubscription = supabase
+      .channel('dashboard_clients_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'clients',
+          filter: `user_id=eq.${user.id}`
+        },
+        () => {
+          console.log('Client change detected, updating stats...')
+          fetchStats()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      reservationsSubscription.unsubscribe()
+      clientsSubscription.unsubscribe()
+    }
+  }, [user?.id, fetchStats])
+
+  // Efecto para actualizar datos de tendencia
+  useEffect(() => {
+    generateTrendData()
+  }, [generateTrendData])
+
+  // Función para refrescar los datos manualmente
+  const refresh = useCallback(() => {
     fetchStats()
-  }
+  }, [fetchStats])
+
+  // Efecto para carga inicial y suscripciones
+  useEffect(() => {
+    if (!user?.id) return
+
+    // Carga inicial solo una vez
+    if (!initialLoadRef.current) {
+      initialLoadRef.current = true
+      fetchStats()
+    }
+
+    // Suscripción a cambios en reservas
+    const reservationsSubscription = supabase
+      .channel('dashboard_reservations_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'reservations',
+          filter: `user_id=eq.${user.id}`
+        },
+        () => {
+          console.log('Reservation change detected, updating stats...')
+          fetchStats()
+        }
+      )
+      .subscribe()
+
+    // Suscripción a cambios en clientes
+    const clientsSubscription = supabase
+      .channel('dashboard_clients_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'clients',
+          filter: `user_id=eq.${user.id}`
+        },
+        () => {
+          console.log('Client change detected, updating stats...')
+          fetchStats()
+        }
+      )
+      .subscribe()
+
+    // Limpieza de suscripciones
+    return () => {
+      reservationsSubscription.unsubscribe()
+      clientsSubscription.unsubscribe()
+    }
+  }, [user?.id, fetchStats])
 
   return {
     stats,

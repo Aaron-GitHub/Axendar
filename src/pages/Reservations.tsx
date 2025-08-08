@@ -1,7 +1,6 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import moment from 'moment'
 import 'moment/locale/es'
-import { RealtimeChannel } from '@supabase/supabase-js'
 import { toast } from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { useAuthContext } from '../contexts/AuthContext'
@@ -9,7 +8,6 @@ import { Reservation, Service, Client, Professional } from '../types'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
 import { getStatusBadgeColor, getStatusLabel, ReservationStatus } from '../utils/statusUtils'
 import { Filter, Calendar, Plus, Download, RefreshCcw, List } from 'lucide-react'
-import ReservationActions from '../components/reservations/ReservationActions'
 import ReservationForm from '../components/reservations/ReservationForm'
 import Modal from '../components/ui/Modal'
 import Button from '../components/ui/Button'
@@ -17,10 +15,91 @@ import * as XLSX from 'xlsx'
 import ReservationDetails from '../components/reservations/ReservationDetails'
 import CalendarView from '../components/reservations/CalendarView'
 import ConfirmationModal from '../components/ui/ConfirmationModal'
+import { DataTable } from '../components/ui/DataTable'
+import { ColumnDef } from '@tanstack/react-table'
+import { IconEdit, IconView } from '../components/ui/Icons'
 
 moment.locale('es')
 
 const Reservations = () => {
+  // Definición de columnas para la tabla
+  const columns = useMemo<ColumnDef<Reservation>[]>(
+    () => [
+      {
+        accessorKey: 'start_time',
+        header: 'Fecha y Hora',
+        cell: ({ row }) => moment(row.getValue('start_time')).format('DD/MM/YYYY HH:mm'),
+        sortingFn: 'datetime',
+      },
+      {
+        accessorFn: (row: Reservation) => row.clients?.name,
+        header: 'Cliente',
+        cell: ({ row }) => (
+          <div>
+            <div className="font-medium text-gray-900">{row.original.clients?.name}</div>
+            <div className="text-sm text-gray-500">{row.original.services?.name}</div>
+          </div>
+        ),
+      },
+      {
+        accessorFn: (row: Reservation) => row.professionals?.name,
+        header: 'Profesional y Servicio',
+        cell: ({ row }) => (
+          <div>
+            <div className="font-medium text-gray-900">{row.original.professionals?.name}</div>
+            <div className="text-sm text-gray-500">{row.original.services?.name}</div>
+          </div>
+        ),
+      },
+      {
+        accessorFn: (row: Reservation) => row.status,
+        header: 'Estado',
+        cell: ({ row }) => (
+          <span
+            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeColor(
+              row.original.status as ReservationStatus
+            )}`}
+          >
+            {getStatusLabel(row.original.status as ReservationStatus)}
+          </span>
+        ),
+      },
+      {
+        accessorKey: 'total_amount',
+        header: 'Total',
+        cell: ({ row }) => {
+          const amount = row.getValue('total_amount') as number
+          return `$${amount?.toLocaleString('es-CL') || 'Sin precio'}`
+        },
+      },
+      
+      {
+        id: 'actions',
+        header: 'Acciones',
+        cell: ({ row }) => (
+
+          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+            <div className="flex items-center justify-end space-x-2">
+              <button
+                onClick={() => handleEdit(row.original)}
+                className="text-primary-600 hover:text-primary-900"
+              >
+                <IconEdit className="h-5 w-5" />
+              </button>
+              <button
+                onClick={() => handleViewDetails(row.original)}
+                className="text-yellow-600 hover:text-yellow-900"
+              >
+                <IconView className="h-5 w-5" />
+              </button>
+            </div>
+          </td>
+        ),
+      },
+    ],
+    []
+  )
+
   const { user } = useAuthContext()
   const [reservations, setReservations] = useState<Reservation[]>([])
   const [filteredReservations, setFilteredReservations] = useState<Reservation[]>([])
@@ -45,124 +124,116 @@ const Reservations = () => {
   const [reservationToCancel, setReservationToCancel] = useState<Reservation | null>(null)
   const [showCancelConfirmation, setShowCancelConfirmation] = useState(false)
 
-  const fetchReservations = useCallback(async () => {
-    if (!user) return
+  const fetchReservations = useCallback(async (filterOptions = filters) => {
+    if (!user?.id) return
     
     setLoading(true)
     try {
-      const [reservationsRes, servicesRes, clientsRes, professionalsRes] = await Promise.all([
-        supabase
-          .from('reservations')
-          .select(`
-            *,
-            clients (*),
-            services (*),
-            professionals (*)
-          `)
-          .eq('user_id', user?.id)
-          .order('start_time', { ascending: true }),
-        supabase
-          .from('services')
-          .select('*')
-          .eq('user_id', user?.id),
-        supabase
-          .from('clients')
-          .select('*'),
-        supabase
-          .from('professionals')
-          .select('*')
-          .eq('user_id', user?.id)
-      ])
+      // Construir la consulta única con todos los datos necesarios
+      let query = supabase
+        .from('reservations')
+        .select(`
+          *,
+          clients!inner(*),
+          services!inner(*),
+          professionals!inner(*)
+        `)
+        .eq('user_id', user.id)
 
-      const { data: reservationsData, error: reservationsError } = reservationsRes
-      const { data: servicesData } = servicesRes
-      const { data: clientsData } = clientsRes
-      const { data: professionalsData } = professionalsRes
+      // Aplicar filtros si existen
+      if (filterOptions?.status) {
+        query = query.eq('status', filterOptions.status)
+      }
+      if (filterOptions?.service) {
+        query = query.eq('service_id', filterOptions.service)
+      }
+      if (filterOptions?.startDate) {
+        query = query.gte('start_time', filterOptions.startDate)
+      }
+      if (filterOptions?.endDate) {
+        query = query.lte('start_time', filterOptions.endDate)
+      }
+
+      // Ordenar por fecha
+      query = query.order('start_time', { ascending: true })
+
+      // Ejecutar la consulta
+      const { data: reservationsData, error: reservationsError } = await query
 
       if (reservationsError) throw reservationsError
 
+      // Extraer datos únicos de las relaciones
+      const uniqueServices = [...new Map(
+        reservationsData?.map(r => [r.services.id, r.services]) || []
+      ).values()]
+
+      const uniqueClients = [...new Map(
+        reservationsData?.map(r => [r.clients.id, r.clients]) || []
+      ).values()]
+
+      const uniqueProfessionals = [...new Map(
+        reservationsData?.map(r => [r.professionals.id, r.professionals]) || []
+      ).values()]
+
+      // Actualizar el estado con los datos filtrados
       setReservations(reservationsData || [])
       setFilteredReservations(reservationsData || [])
-      setServices(servicesData || [])
-      setClients(clientsData || [])
-      setProfessionals(professionalsData || [])
+      setServices(uniqueServices)
+      setClients(uniqueClients)
+      setProfessionals(uniqueProfessionals)
     } catch (error) {
       console.error('Error fetching data:', error)
       toast.error('Error al cargar los datos')
     } finally {
       setLoading(false)
     }
-  }, [user])
+  }, []) // Sin dependencias para mantener la función estable
 
+  // Efecto único para manejar carga inicial, suscripción y filtros
   useEffect(() => {
-    if (!user) return
+    if (!user?.id) return
 
-    let subscription: RealtimeChannel | null = null
+    // Variable para los timeouts
+    let debounceTimeout: NodeJS.Timeout | null = null
 
-    const setupSubscription = async () => {
-      try {
-        subscription = supabase
-          .channel('reservations_channel')
-          .on(
-            'postgres_changes',
-            {
-              event: '*',
-              schema: 'public',
-              table: 'reservations',
-              filter: `user_id=eq.${user.id}`
-            },
-            () => {
-              fetchReservations()
-            }
-          )
-          .subscribe()
-      } catch (error) {
-        console.error('Error initializing subscription:', error)
-        toast.error('Error al conectar con el servidor')
+    // Función para limpiar timeouts
+    const clearTimeouts = () => {
+      if (debounceTimeout) {
+        clearTimeout(debounceTimeout)
+        debounceTimeout = null
       }
     }
 
-    setupSubscription()
-    fetchReservations()
+    // Carga inicial
+    fetchReservations(filters)
 
+    // Configurar suscripción en tiempo real
+    const subscription = supabase
+      .channel('reservations_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'reservations',
+          filter: `user_id=eq.${user.id}`
+        },
+        () => {
+          console.log('Real-time update received')
+          clearTimeouts()
+          debounceTimeout = setTimeout(() => {
+            fetchReservations(filters)
+          }, 1000)
+        }
+      )
+      .subscribe()
+
+    // Cleanup
     return () => {
-      if (subscription) {
-        subscription.unsubscribe()
-      }
+      clearTimeouts()
+      subscription.unsubscribe()
     }
-  }, [user, fetchReservations])
-
-  // Función para aplicar filtros
-  const applyFilters = () => {
-    let filtered = [...reservations]
-
-    if (filters.status) {
-      filtered = filtered.filter(r => r.status === filters.status)
-    }
-
-    if (filters.service) {
-      filtered = filtered.filter(r => r.services?.id === filters.service)
-    }
-
-    if (filters.startDate) {
-      filtered = filtered.filter(r => 
-        moment(r.start_time).isSameOrAfter(moment(filters.startDate).startOf('day'))
-      )
-    }
-
-    if (filters.endDate) {
-      filtered = filtered.filter(r => 
-        moment(r.start_time).isSameOrBefore(moment(filters.endDate).endOf('day'))
-      )
-    }
-
-    setFilteredReservations(filtered)
-  }
-
-  // Efecto para aplicar filtros cuando cambien
-  useEffect(() => {
-    applyFilters()
-  }, [filters, reservations])
+  }, [user?.id, filters]) // Depende solo del ID del usuario y los filtros
 
   const handleViewDetails = (reservation: Reservation) => {
     setSelectedReservation(reservation)
@@ -403,145 +474,33 @@ const Reservations = () => {
         </div>
       )}
 
-      {!loading ? (
-        viewMode === 'list' ? (
-          <div className="bg-white shadow sm:rounded-lg">
-            <div className="overflow-x-auto relative">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr className="text-left">
-                    <th scope="col" className="relative px-3 sm:px-6 py-3.5 text-left text-sm font-semibold text-gray-900 min-w-[200px]">
-                      <input
-                        type="checkbox"
-                        className="absolute left-4 top-1/2 -mt-2 h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                        checked={selectedReservations.length === filteredReservations.length}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedReservations(filteredReservations.map(r => r.id))
-                          } else {
-                            setSelectedReservations([])
-                          }
-                        }}
-                      />
-                      <span className="ml-8">Cliente</span>
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-3 sm:px-6 py-3.5 text-left text-sm font-semibold text-gray-900 min-w-[120px]"
-                    >
-                      Servicio
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-3 sm:px-6 py-3.5 text-left text-sm font-semibold text-gray-900 min-w-[120px]"
-                    >
-                      Profesional
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-3 sm:px-6 py-3.5 text-left text-sm font-semibold text-gray-900 min-w-[150px]"
-                    >
-                      Fecha y Hora
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-3 sm:px-6 py-3.5 text-left text-sm font-semibold text-gray-900 min-w-[100px]"
-                    >
-                      Estado
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-3 sm:px-6 py-3.5 text-left text-sm font-semibold text-gray-900 min-w-[100px]"
-                    >
-                      Total
-                    </th>
-                    <th scope="col" className="relative px-6 py-3.5">
-                      <span className="sr-only">Acciones</span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredReservations.map((reservation) => (
-                    <tr
-                      key={reservation.id}
-                      className="hover:bg-gray-50"
-                    >
-                      <td className="whitespace-nowrap px-6 py-4 text-sm">
-                        <div className="flex items-center">
-                          <input
-                            type="checkbox"
-                            className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                            checked={selectedReservations.includes(reservation.id)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSelectedReservations([...selectedReservations, reservation.id])
-                              } else {
-                                setSelectedReservations(selectedReservations.filter(id => id !== reservation.id))
-                              }
-                            }}
-                          />
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">{reservation.clients?.name}</div>
-                            <div className="text-sm text-gray-500">{reservation.clients?.email}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{reservation.services?.name}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{reservation.professionals?.name}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {moment(reservation.start_time).format('DD/MM/YYYY')}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {moment(reservation.start_time).format('HH:mm')} - {moment(reservation.end_time).format('HH:mm')}
-                        </div>
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm">
-                        <span
-                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusBadgeColor(reservation.status)}`}
-                        >
-                          {getStatusLabel(reservation.status)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        ${reservation.total_amount.toLocaleString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium relative overflow-visible">
-                        <ReservationActions
-                          reservation={reservation}
-                          onViewDetails={() => handleViewDetails(reservation)}
-                          onEdit={() => handleEdit(reservation)}
-                          onStatusChange={(status) => handleStatusChange(reservation, status)}
-                        />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            {reservations.length === 0 && (
-              <div className="text-center py-12">
-                <h3 className="text-lg font-medium text-gray-900">No hay reservas</h3>
-                <p className="mt-1 text-sm text-gray-500">
-                  No se encontraron reservas para mostrar.
-                </p>
-              </div>
-            )}
-          </div>
-        ) : (
-          <CalendarView 
-            reservations={filteredReservations}
-            onEventClick={(reservation) => handleViewDetails(reservation)}
-          />
-        )
-      ) : (
+      {loading ? (
         <div className="flex justify-center items-center h-64">
           <LoadingSpinner />
         </div>
+      ) : (
+        <>
+          {/* Vista de lista */}
+          {viewMode === 'list' ? (
+            <div className="mt-8">
+              <DataTable
+                data={filteredReservations}
+                columns={columns}
+                enableRowSelection
+                enableMultiRowSelection
+                onRowSelectionChange={(selectedRows) => {
+                  setSelectedReservations(selectedRows.map(row => row.id))
+                }}
+                pageSize={20}
+              />
+            </div>
+          ) : (
+            <CalendarView 
+              reservations={filteredReservations}
+              onEventClick={(reservation) => handleViewDetails(reservation)}
+            />
+          )}
+        </>
       )}
 
       {/* Modal de detalles */}

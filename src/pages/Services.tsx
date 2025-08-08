@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuthContext } from '../contexts/AuthContext'
 import { Service } from '../types'
@@ -6,36 +6,141 @@ import LoadingSpinner from '../components/ui/LoadingSpinner'
 import Button from '../components/ui/Button'
 import Modal from '../components/ui/Modal'
 import ServiceForm from '../components/services/ServiceForm'
-import { IconSearch, IconDownload, IconPlus, IconService, IconEdit, IconTrash, IconUsers } from '../components/ui/Icons'
+import { IconDownload, IconPlus, IconService, IconEdit, IconTrash, IconSearch } from '../components/ui/Icons'
+import { DataTable } from '../components/ui/DataTable'
+import { ColumnDef } from '@tanstack/react-table'
 import toast from 'react-hot-toast'
 import ConfirmationModal from '../components/ui/ConfirmationModal'
 
-const Services: React.FC = () => {
+const Services = () => {
   const { user } = useAuthContext()
   const [services, setServices] = useState<Service[]>([])
-  const [filteredServices, setFilteredServices] = useState<Service[]>([])
   const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState('')
   const [isFormModalOpen, setIsFormModalOpen] = useState(false)
   const [editingService, setEditingService] = useState<Service | null>(null)
+  const [serviceToDelete, setServiceToDelete] = useState<string | null>(null)
 
+  // Definición de columnas para la tabla
+  const columns = useMemo<ColumnDef<Service>[]>(
+    () => [
+      {
+        accessorKey: 'name',
+        header: 'Servicio',
+        cell: ({ row }) => (
+          <div className="flex items-center">
+            <div className="flex-shrink-0 h-10 w-10">
+              <div className="h-10 w-10 bg-primary-500 rounded-full flex items-center justify-center">
+                <IconService className="h-5 w-5 text-white" />
+              </div>
+            </div>
+            <div className="ml-4">
+              <div className="font-medium text-gray-900">{row.original.name}</div>
+              <div className="text-sm text-gray-500 max-w-xs truncate">
+                {row.original.description || 'Sin descripción'}
+              </div>
+            </div>
+          </div>
+        ),
+      },
+      {
+        accessorKey: 'duration',
+        header: 'Duración',
+        cell: ({ row }) => (
+          <div className="text-sm text-gray-900">
+            {row.original.duration || 'Sin duración'}
+          </div>
+        ),
+      },
+      {
+        accessorKey: 'price',
+        header: 'Precio',
+        cell: ({ row }) => (
+          <div className="text-sm text-gray-900">
+            ${row.original.price?.toLocaleString('es-CL') || 'Sin precio'}
+          </div>
+        ),
+      },
+      {
+        accessorKey: 'created_at',
+        header: 'Fecha de registro',
+        cell: ({ row }) => (
+          <div className="text-sm text-gray-500">
+            {formatDate(row.original.created_at)}
+          </div>
+        ),
+      },
+      {
+        id: 'actions',
+        header: '',
+        cell: ({ row }) => (
+          <div className="flex items-center justify-end space-x-2">
+            <button
+              onClick={() => handleEditService(row.original)}
+              className="text-primary-600 hover:text-primary-900"
+            >
+              <IconEdit className="h-5 w-5" />
+            </button>
+            <button
+              onClick={() => handleDeleteService(row.original.id)}
+              className="text-red-600 hover:text-red-900"
+            >
+              <IconTrash className="h-5 w-5" />
+            </button>
+          </div>
+        ),
+      },
+    ],
+    []
+  )
+
+  // Ref para controlar la carga inicial
+  const initialLoadRef = useRef(false)
+
+  // Efecto único para manejar carga inicial y suscripción
   useEffect(() => {
-    if (user) {
+    if (!user?.id) return
+
+    // Carga inicial solo una vez
+    if (!initialLoadRef.current) {
+      initialLoadRef.current = true
       fetchServices()
     }
-  }, [user])
 
-  useEffect(() => {
-    // Filter services based on search term
-    const filtered = services.filter(service =>
-      service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (service.description && service.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (service.duration && service.duration.toString().includes(searchTerm))
-    )
-    setFilteredServices(filtered)
-  }, [services, searchTerm])
+    // Configurar suscripción en tiempo real
+    const subscription = supabase
+      .channel('services_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'services',
+          filter: `user_id=eq.${user.id}`
+        },
+        () => {
+          fetchServices()
+        }
+      )
+      .subscribe()
 
-  const fetchServices = async () => {
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [user?.id])
+
+  
+  const formatDate = useCallback((date: string | undefined | null) => {
+    if (!date) return 'N/A'
+    try {
+      const dateObj = new Date(date)
+      if (isNaN(dateObj.getTime())) return 'N/A'
+      return dateObj.toLocaleDateString('es-CL')
+    } catch {
+      return 'N/A'
+    }
+  }, [])
+
+  const fetchServices = useCallback(async () => {
     if (!user) return
 
     setLoading(true)
@@ -54,7 +159,7 @@ const Services: React.FC = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   const handleNewService = () => {
     setEditingService(null)
@@ -92,7 +197,6 @@ const Services: React.FC = () => {
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false)
-  const [serviceToDelete, setServiceToDelete] = useState<string | null>(null)
 
   const handleFormSubmit = async () => {
     try {
@@ -123,7 +227,7 @@ const Services: React.FC = () => {
         `"${service.duration || ''}"`,
         `"${service.price || ''}"`,
         `"${service.active || ''}"`,
-        `"${new Date(service.created_at).toLocaleDateString()}"`
+        `"${formatDate(service.created_at)}"`
       ].join(','))
     ].join('\n')
 
@@ -152,56 +256,31 @@ const Services: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-      <div className="relative w-full max-w-2xl">
-          <IconSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Buscar servicios por nombre, duración o precio..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-          />
-        </div>
-        <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            onClick={handleExportToCSV}
-            disabled={services.length === 0}
-          >
-            <IconDownload className="h-5 w-5" />
-            Exportar CSV
-          </Button>
-          <Button onClick={handleNewService}>
-            <IconPlus className="h-5 w-5" />
-            Nuevo Servicio
-          </Button>
-        </div>
-      </div>
-
+     
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex items-center">
-            <div className="bg-primary-100 p-3 rounded-lg">
-                <IconService className="h-8 w-8 text-primary-600" />
+            <div className="bg-green-100 p-3 rounded-lg">
+              <IconService className="h-5 w-5 text-green-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total Servicios</p>
-              <p className="text-2xl font-bold text-gray-900">{services.length}</p>
+              <p className="text-sm font-medium text-gray-600">Activos</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {services.filter((s) => s.active).length}
+              </p>
             </div>
           </div>
         </div>
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex items-center">
-            <div className="bg-green-100 p-3 rounded-lg">
-              <IconUsers className="h-6 w-6 text-green-600" />
+            <div className="bg-blue-100 p-3 rounded-lg">
+              <IconService className="h-5 w-5 text-blue-600" />
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Nuevos este mes</p>
               <p className="text-2xl font-bold text-gray-900">
-                {services.filter(c => new Date(c.created_at).getMonth() === new Date().getMonth()).length}
+                {services.filter((s) => new Date(s.created_at).getMonth() === new Date().getMonth()).length}
               </p>
             </div>
           </div>
@@ -212,123 +291,56 @@ const Services: React.FC = () => {
               <IconSearch className="h-5 w-5 text-blue-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Resultados</p>
-              <p className="text-2xl font-bold text-gray-900">{filteredServices.length}</p>
+              <p className="text-sm font-medium text-gray-600">Disponibles</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {services.filter(p => p.active).length}
+              </p>
             </div>
           </div>
         </div>
       </div>
 
+      <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none flex justify-end space-x-2">
+        <Button
+          onClick={handleExportToCSV}
+          variant="outline"
+          className="w-full sm:w-auto"
+          disabled={services.length === 0}
+        >
+          <IconDownload className="h-4 w-4 mr-2" />
+          Exportar CSV
+        </Button>
+        <Button
+          onClick={handleNewService}
+          variant="primary"
+          className="w-full sm:w-auto"
+        >
+          <IconPlus className="h-4 w-4 mr-2" />
+          Nuevo Servicio
+        </Button>
+      </div>
+
       {/* Services Table */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900">Lista de Servicios</h3>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Servicio
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Descripción
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Duración
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Precio
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Creado
-                </th>
-                <th className="relative px-6 py-3">
-                  <span className="sr-only">Acciones</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredServices.map((service) => (
-                <tr key={service.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0 h-10 w-10">
-                        <div className="h-10 w-10 bg-primary-500 rounded-full flex items-center justify-center">
-                          <span className="text-white font-medium text-sm">
-                            {service.name.charAt(0).toUpperCase()}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">
-                          {service.name}
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div 
-                      className="text-sm text-gray-900 max-w-xs truncate" 
-                      title={service.description || 'Sin descripción'}
-                    >
-                      {service.description || 'Sin descripción'}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{service.duration || 'Sin duración'}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">${service.price?.toLocaleString('es-CL') || 'Sin precio'}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">
-                      {new Date(service.created_at).toLocaleDateString('es-CL')}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div className="flex items-center justify-end space-x-2">
-                      <button
-                        onClick={() => handleEditService(service)}
-                        className="text-primary-600 hover:text-primary-900"
-                      >
-                        <IconEdit className="h-5 w-5" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteService(service.id)}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        <IconTrash className="h-5 w-5" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {filteredServices.length === 0 && (
-            <div className="text-center py-12">
-              <IconUsers className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900">
-                {searchTerm ? 'No se encontraron servicios' : 'No hay servicios'}
-              </h3>
-              <p className="mt-1 text-sm text-gray-500">
-                {searchTerm 
-                  ? 'Intenta con otros términos de búsqueda'
-                  : 'Comienza agregando tu primer servicio.'
-                }
-              </p>
-              {!searchTerm && (
-                <div className="mt-6">
-                  <Button onClick={handleNewService}>
-                    <IconPlus className="h-4 w-4 mr-2" />
-                    Nuevo Servicio
-                  </Button>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+      <div className="p-6">
+        {services.length === 0 ? (
+          <div className="text-center py-12">
+            <IconService className="mx-auto h-12 w-12 text-gray-400" />
+            <h3 className="mt-2 text-sm font-medium text-gray-900">
+              No hay servicios
+            </h3>
+            <p className="mt-1 text-sm text-gray-500">
+              Comienza agregando tu primer servicio.
+            </p>
+          </div>
+        ) : (
+          <DataTable
+            columns={columns}
+            data={services}
+            pageSize={10}
+            enableRowSelection={false}
+            enableMultiRowSelection={false}
+          />
+        )}
       </div>
 
       {/* Modal */}
@@ -361,7 +373,7 @@ const Services: React.FC = () => {
         confirmText="Eliminar"
         cancelText="Cancelar"
         confirmVariant="danger"
-      />
+      /> 
     </div>
   )
 }

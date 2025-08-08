@@ -260,26 +260,29 @@ export const getAvailableTimeSlots = async (
     const slots: string[] = []
     const slotDuration = service.duration
 
-    // Para cada horario laboral del día
-    for (const schedule of schedules) {
-      const [startHour, startMinute] = schedule.start_time.split(':').map(Number)
-      const [endHour, endMinute] = schedule.end_time.split(':').map(Number)
+    try {
+      // Para cada horario laboral del día
+      for (const schedule of schedules) {
+        const [startHour, startMinute] = schedule.start_time.split(':').map(Number)
+        const [endHour, endMinute] = schedule.end_time.split(':').map(Number)
 
+        // Convertir horarios a minutos totales para facilitar el cálculo
+        const startTimeInMinutes = startHour * 60 + startMinute
+        const endTimeInMinutes = endHour * 60 + endMinute
 
-      // Generar slots dentro del horario laboral
-      for (let hour = startHour; hour <= endHour; hour++) {
-        // Para la última hora, solo generar slots que terminen antes o en el horario de fin
-        const maxMinute = hour === endHour ? endMinute - slotDuration : 59
-        const minMinute = hour === startHour ? startMinute : 0
-
-        // Solo generar slots si hay suficiente tiempo para el servicio
-        if (maxMinute >= minMinute) {
-          for (let minute = minMinute; minute <= maxMinute; minute += slotDuration) {
-            const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`
-            const slotDate = new Date(date)
-            slotDate.setHours(hour, minute, 0, 0)
-            const slotEnd = new Date(slotDate.getTime() + service.duration * 60000)
-          
+        // Generar slots dentro del horario laboral
+        for (
+          let currentMinute = startTimeInMinutes;
+          currentMinute <= endTimeInMinutes - slotDuration;
+          currentMinute += slotDuration
+        ) {
+          const hour = Math.floor(currentMinute / 60)
+          const minute = currentMinute % 60
+          const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`
+          const slotDate = new Date(date)
+          slotDate.setHours(hour, minute, 0, 0)
+          const slotEnd = new Date(slotDate.getTime() + service.duration * 60000)
+            
           // Validar el tiempo mínimo de antelación según el perfil
           const now = new Date()
           const minBookingTime = profile?.min_booking_hours || 0
@@ -318,18 +321,22 @@ export const getAvailableTimeSlots = async (
             )
           })
 
-
-            if (isAvailable) {
-              slots.push(timeString)
-            }
+          if (isAvailable) {
+            slots.push(timeString)
           }
         }
       }
-    }
 
-    return {
-      success: true,
-      data: slots.sort(),
+      return {
+        success: true,
+        data: slots.sort(),
+      }
+    } catch (error) {
+      console.error('Error generating time slots:', error)
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Error al generar horarios disponibles'
+      }
     }
   } catch (error) {
     console.error('Error getting available time slots:', error)
