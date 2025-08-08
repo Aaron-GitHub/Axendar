@@ -31,42 +31,42 @@ import { PlanSelectionStep } from "../components/onboarding/PlanSelectionStep";
 
 const steps = [
   {
-    id: 0,
+    id: 1,
     title: 'Bienvenido a Axendar',
     subtitle: 'Comienza tu prueba gratuita',
     icon: HeartHandshake,
     color: 'bg-primary-500'
   },
   {
-    id: 1,
+    id: 2,
     title: 'Elige tu Plan',
     subtitle: 'Selecciona el plan que mejor se adapte a ti',
     icon: Star,
     color: 'bg-yellow-500'
   },
   {
-    id: 2,
+    id: 3,
     title: 'Información de tu Empresa',
     subtitle: 'Personaliza tu experiencia',
     icon: Building2,
     color: 'bg-primary-500'
   },
   {
-    id: 2,
+    id: 4,
     title: 'Configura tu Primer Cliente',
     subtitle: 'Comienza a gestionar tu base de datos',
     icon: Users,
     color: 'bg-secondary-400'
   },
   {
-    id: 3,
+    id: 5,
     title: 'Crea tu Primer Servicio',
     subtitle: 'Define lo que ofreces',
     icon: Briefcase,
     color: 'bg-green-500'
   },
   {
-    id: 4,
+    id: 6,
     title: '¡Todo Listo!',
     subtitle: 'Tu sistema está configurado',
     icon: CheckCircle,
@@ -79,7 +79,7 @@ const planSchema = yup.object().shape({
   selectedPlan: yup.string().required('Debes seleccionar un plan')
 })
 
-const step1Schema = yup.object().shape({
+const step3Schema = yup.object().shape({
   name: yup.string().required('Nombre completo es requerido'),
   email: yup.string().email('Email inválido').required('Email es requerido'),
   password: yup.string().min(6, 'La contraseña debe tener al menos 6 caracteres').required('Contraseña es requerida'),
@@ -89,7 +89,7 @@ const step1Schema = yup.object().shape({
   companyName: yup.string().required('Nombre de empresa es requerido')
 })
 
-const step2Schema = yup.object().shape({
+const step4Schema = yup.object().shape({
   professional_name: yup.string().required('Nombre del profesional es requerido'),
   professional_email: yup.string().email('Email inválido').required('Email es requerido'),
   professional_phone: yup.string().required('Teléfono es requerido'),
@@ -100,7 +100,7 @@ const step2Schema = yup.object().shape({
   ).min(1, 'Agrega al menos una especialidad')
 })
 
-const step3Schema = yup.object().shape({
+const step5Schema = yup.object().shape({
   service_name: yup.string().required('Nombre del servicio es requerido'),
   service_duration: yup.number().min(15, 'Mínimo 15 minutos').required('Duración es requerida'),
   service_price: yup.number().min(1, 'Precio debe ser mayor a 0').required('Precio es requerido')
@@ -110,7 +110,7 @@ const Onboarding: React.FC = () => {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { user, startTemporarySession } = useOnboardingAuth()
-  const [currentStep, setCurrentStep] = useState(0)
+  const [currentStep, setCurrentStep] = useState(1)
   const [loading, setLoading] = useState(false)
   const [completedSteps, setCompletedSteps] = useState<number[]>([])
   const [showEmailExistsModal, setShowEmailExistsModal] = useState(false)
@@ -141,9 +141,9 @@ const Onboarding: React.FC = () => {
     }
   })
 
-  // Step 1 Form
-  const step1Form = useForm({
-    resolver: yupResolver(step1Schema),
+  // Step 3 Form
+  const step3Form = useForm({
+    resolver: yupResolver(step3Schema),
     defaultValues: {
       name: '',
       email: '',
@@ -153,9 +153,9 @@ const Onboarding: React.FC = () => {
     }
   })
 
-  // Step 2 Form
-  const step2Form = useForm({
-    resolver: yupResolver(step2Schema),
+  // Step 4 Form
+  const step4Form = useForm({
+    resolver: yupResolver(step4Schema),
     defaultValues: {
       professional_name: '',
       professional_email: '',
@@ -164,9 +164,9 @@ const Onboarding: React.FC = () => {
     }
   })
 
-  // Step 3 Form
-  const step3Form = useForm({
-    resolver: yupResolver(step3Schema),
+  // Step 5 Form
+  const step5Form = useForm({
+    resolver: yupResolver(step5Schema),
     defaultValues: {
       service_name: '',
       service_duration: 60,
@@ -176,7 +176,7 @@ const Onboarding: React.FC = () => {
 
 
 
-  const handleStep1Submit = async (data: any) => {
+  const handleStep3Submit = async (data: any) => {
     // Include selected plan in the registration data
     const registrationData = {
       ...data,
@@ -208,8 +208,8 @@ const Onboarding: React.FC = () => {
       companyName: data.companyName
     }))
       
-      setCompletedSteps([...completedSteps, 1])
-      setCurrentStep(2)
+      setCompletedSteps([...completedSteps, 3])
+      setCurrentStep(4)
       toast.success('Datos guardados correctamente')
     } catch (error: any) {
       console.error('Error:', error)
@@ -217,7 +217,7 @@ const Onboarding: React.FC = () => {
     }
   }
 
-  const handleStep2Submit = async (data: any) => {
+  const handleStep4Submit = async (data: any) => {
     setLoading(true)
     try {
       // Validar datos requeridos
@@ -236,8 +236,8 @@ const Onboarding: React.FC = () => {
       console.log('Guardando datos del profesional:', professionalData)
       localStorage.setItem('onboarding_professional', JSON.stringify(professionalData))
       
-      setCompletedSteps([...completedSteps, 2])
-      setCurrentStep(3)
+      setCompletedSteps([...completedSteps, 4])
+      setCurrentStep(5)
       toast.success('Datos guardados correctamente')
     } catch (error: any) {
       console.error('Error:', error)
@@ -247,7 +247,7 @@ const Onboarding: React.FC = () => {
     }
   }
 
-  const handleStep3Submit = async (data: any) => {
+  const handleStep5Submit = async (data: any) => {
     setLoading(true)
     try {
       // Validar datos requeridos
@@ -265,8 +265,8 @@ const Onboarding: React.FC = () => {
       console.log('Guardando datos del servicio:', serviceData)
       localStorage.setItem('onboarding_service', JSON.stringify(serviceData))
       
-      setCompletedSteps([...completedSteps, 3])
-      setCurrentStep(4);
+      setCompletedSteps([...completedSteps, 5])
+      setCurrentStep(6);
       
       toast.success('Datos guardados correctamente')
     } catch (error: any) {
@@ -400,31 +400,49 @@ const Onboarding: React.FC = () => {
   }
 
   const nextStep = () => {
-    if (currentStep < 5) {
-      if (currentStep === 1) {
-        // When moving from plan selection, add it to completed steps
+    const nextStepIndex = steps.findIndex(step => step.id === currentStep) + 1
+
+    console.log('Next step index:', nextStepIndex)
+    console.log('Steps length:', steps.length)
+
+    if (nextStepIndex < steps.length) {
+      // Solo marcar como completado si no está en la lista
+      if (!completedSteps.includes(currentStep)) {
         setCompletedSteps([...completedSteps, currentStep])
       }
-      setCurrentStep(currentStep + 1)
+      setCurrentStep(steps[nextStepIndex].id)
     }
   }
 
   const prevStep = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1)
+    const prevStepIndex = steps.findIndex(step => step.id === currentStep) - 1
+    if (prevStepIndex >= 0) {
+      // Remover el paso actual de completados al retroceder
+      setCompletedSteps(completedSteps.filter(step => step !== currentStep))
+      setCurrentStep(steps[prevStepIndex].id)
     }
   }
-  const renderProgressBar = () => (
-    <div className="mb-8">
-      <div className="flex items-center justify-between mb-4">
-        {steps.map(step => {
+
+  const renderProgressBar = () => {
+    return (
+      <div className="mb-8">
+        <div className="flex justify-between items-center gap-4">
+        {steps.map((step, index) => {
           const StepIcon = step.icon
           const isCompleted = completedSteps.includes(step.id)
           const isCurrent = currentStep === step.id
-          const isAccessible = step.id <= currentStep || isCompleted
+          // Un paso es accesible si los pasos anteriores están completados
+          const currentStepIndex = steps.findIndex(s => s.id === currentStep)
+          const isAccessible = index <= currentStepIndex || isCompleted || completedSteps.includes(step.id)
 
           return (
-            <div key={step.id} className="flex flex-col items-center">
+            <div key={step.id} className="flex flex-col items-center relative">
+              {/* Línea conectora entre pasos */}
+              {index < steps.length - 1 && (
+                <div className={`absolute left-[50%] w-[calc(200%+1rem)] h-0.5 top-6 -z-10 ${
+                  isCompleted ? 'bg-green-500' : 'bg-gray-200'
+                }`} />
+              )}
               <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 ${
                 isCompleted 
                   ? 'bg-green-500 text-white' 
@@ -448,432 +466,20 @@ const Onboarding: React.FC = () => {
             </div>
           )
         })}
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-2 mt-4">
+          <div 
+            className="bg-gradient-to-r from-primary-500 to-secondary-400 h-2 rounded-full transition-all duration-500"
+            style={{ 
+              width: `${(steps.findIndex(step => step.id === currentStep) / (steps.length - 1)) * 100}%` 
+            }}
+          />
+        </div>
       </div>
-      <div className="w-full bg-gray-200 rounded-full h-2">
-        <div 
-          className="bg-gradient-to-r from-primary-500 to-secondary-400 h-2 rounded-full transition-all duration-500"
-          style={{ width: `${((currentStep - 1) / (steps.length - 1)) * 100}%` }}
-        />
-      </div>
-    </div>
-  )
-
+    )
+  }
   // Logo upload moved to admin/profile page
 
-  const renderStep1 = () => (
-    <div className="space-y-8">
-      <div className="text-center">
-        <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-primary-100">
-          <Building2 className="h-6 w-6 text-primary-600" />
-        </div>
-        <h2 className="mt-4 text-2xl font-bold text-gray-900">
-          Crea tu Cuenta
-        </h2>
-        <p className="mt-1 text-gray-500">
-          Comienza configurando tu cuenta empresarial
-        </p>
-      </div>
-
-      <form onSubmit={step1Form.handleSubmit(handleStep1Submit)} className="space-y-6">
-        <div className="space-y-6">
-
-          <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-              Nombre Completo
-            </label>
-            <input
-              type="text"
-              {...step1Form.register('name')}
-              autoComplete="name"
-              className="appearance-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
-              placeholder="Tu nombre completo"
-            />
-            {step1Form.formState.errors.name && (
-              <p className="mt-1 text-sm text-red-600">{step1Form.formState.errors.name.message}</p>
-            )}
-          </div>
-
-          <div>
-            <label htmlFor="companyName" className="block text-sm font-medium text-gray-700">
-              Nombre de la Empresa
-            </label>
-            <input
-              type="text"
-              {...step1Form.register('companyName')}
-              autoComplete="companyName"
-              className="appearance-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
-              placeholder="Nombre de tu empresa"
-            />
-            {step1Form.formState.errors.companyName && (
-              <p className="mt-1 text-sm text-red-600">{step1Form.formState.errors.companyName.message}</p>
-            )}
-          </div>
-
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-              Email
-            </label>
-            <input
-              type="email"
-              {...step1Form.register('email')}
-              autoComplete="email"
-              className="appearance-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
-              placeholder="tu@email.com"
-            />
-            {step1Form.formState.errors.email && (
-              <p className="mt-1 text-sm text-red-600">{step1Form.formState.errors.email.message}</p>
-            )}
-          </div>
-
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-              Contraseña
-            </label>
-            <input
-              type="password"
-              {...step1Form.register('password')}
-              className="appearance-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
-              placeholder="Mínimo 6 caracteres"
-            />
-            {step1Form.formState.errors.password && (
-              <p className="mt-1 text-sm text-red-600">{step1Form.formState.errors.password.message}</p>
-            )}
-          </div>
-
-          <div>
-            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
-              Confirmar Contraseña
-            </label>
-            <input
-              type="password"
-              {...step1Form.register('confirmPassword')}
-              className="appearance-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
-              placeholder="Confirma tu contraseña"
-            />
-            {step1Form.formState.errors.confirmPassword && (
-              <p className="mt-1 text-sm text-red-600">{step1Form.formState.errors.confirmPassword.message}</p>
-            )}
-          </div>
-        </div>
-
-        <div className="flex justify-between">
-          <Button
-            type="button"
-            onClick={handleSkip}
-            variant="outline"
-          >
-            Saltar
-          </Button>
-          <Button
-            type="submit"
-            loading={loading}
-          >
-            Continuar
-            <ArrowRight className="ml-2 h-5 w-5" />
-          </Button>
-        </div>
-      </form>
-    </div>
-  )
-
-  const renderStep2 = () => (
-    <div className="space-y-6">
-      <div className="text-center mb-8">
-        <div className="bg-secondary-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-          <Users className="h-8 w-8 text-secondary-600" />
-        </div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Agrega tu primer profesional</h2>
-        <p className="text-gray-600">Configura al primer miembro de tu equipo</p>
-      </div>
-
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-        <div className="flex items-start">
-          <Target className="h-5 w-5 text-blue-600 mt-0.5 mr-3" />
-          <div>
-            <h4 className="text-sm font-medium text-blue-900">💡 Consejo</h4>
-            <p className="text-sm text-blue-700 mt-1">
-              Si trabajas solo, agregate a ti mismo como profesional. Si tienes un equipo, comienza con el primer miembro.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <form onSubmit={step2Form.handleSubmit(handleStep2Submit)} className="space-y-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Nombre del profesional *
-          </label>
-          <input
-            {...step2Form.register('professional_name')}
-            type="text"
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-            placeholder="Ej: Carlos Rodríguez"
-          />
-          {step2Form.formState.errors.professional_name && (
-            <p className="mt-1 text-sm text-red-600">{step2Form.formState.errors.professional_name.message}</p>
-          )}
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Email *
-          </label>
-          <input
-            {...step2Form.register('professional_email')}
-            type="email"
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-            placeholder="carlos@email.com"
-          />
-          {step2Form.formState.errors.professional_email && (
-            <p className="mt-1 text-sm text-red-600">{step2Form.formState.errors.professional_email.message}</p>
-          )}
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Teléfono *
-          </label>
-          <input
-            {...step2Form.register('professional_phone')}
-            type="tel"
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-            placeholder="+56 9 8765 4321"
-          />
-          {step2Form.formState.errors.professional_phone && (
-            <p className="mt-1 text-sm text-red-600">{step2Form.formState.errors.professional_phone.message}</p>
-          )}
-        </div>
-
-        <div className="space-y-1">
-          <label className="block text-sm font-medium text-gray-700">
-            Especialidades
-          </label>
-          <div className="space-y-2">
-            {step2Form.watch('specialties')?.map((_: any, index: number) => (
-              <div key={index} className="flex gap-2">
-                <input
-                  {...step2Form.register(`specialties.${index}.value`)}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-                  placeholder="Ej: Masajes, Terapia, etc."
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    const values = step2Form.getValues('specialties') || [];
-                    if (values.length > 1) {
-                      const newValues = values.filter((_, i: number) => i !== index);
-                      step2Form.setValue('specialties', newValues);
-                    }
-                  }}
-                  className="inline-flex items-center p-2 border border-transparent rounded-md text-red-600 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                >
-                  <Trash className="h-5 w-5" />
-                </button>
-              </div>
-            ))}
-            <button
-              type="button"
-              onClick={() => {
-                const values = step2Form.getValues('specialties') || [];
-                step2Form.setValue('specialties', [...values, { value: '' }]);
-              }}
-              className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-            >
-              <Plus className="h-5 w-5 mr-2" />
-              Agregar Especialidad
-            </button>
-          </div>
-          {step2Form.formState.errors.specialties && (
-            <p className="text-sm text-red-600">{step2Form.formState.errors.specialties.message}</p>
-          )}
-        </div>
-
-        <div className="flex justify-between pt-6">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={prevStep}
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Anterior
-          </Button>
-          <Button
-            type="submit"
-            loading={loading}
-          >
-            Continuar
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
-        </div>
-      </form>
-    </div>
-  )
-
-  const renderStep3 = () => (
-    <div className="space-y-6">
-      <div className="text-center mb-8">
-        <div className="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-          <Briefcase className="h-8 w-8 text-green-600" />
-        </div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Define tu primer servicio</h2>
-        <p className="text-gray-600">Configura los servicios que ofreces a tus clientes</p>
-      </div>
-
-      <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-        <div className="flex items-start">
-          <Zap className="h-5 w-5 text-green-600 mt-0.5 mr-3" />
-          <div>
-            <h4 className="text-sm font-medium text-green-900">⚡ Automatización</h4>
-            <p className="text-sm text-green-700 mt-1">
-              Una vez configurado, el sistema calculará automáticamente el tiempo total y el costo de cada reserva.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <form onSubmit={step3Form.handleSubmit(handleStep3Submit)} className="space-y-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Nombre del servicio *
-          </label>
-          <input
-            {...step3Form.register('service_name')}
-            type="text"
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-            placeholder="Ej: Masaje Relajante"
-          />
-          {step3Form.formState.errors.service_name && (
-            <p className="mt-1 text-sm text-red-600">{step3Form.formState.errors.service_name.message}</p>
-          )}
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Duración (minutos) *
-            </label>
-            <div className="relative">
-              <input
-                {...step3Form.register('service_duration')}
-                type="number"
-                min="15"
-                step="15"
-                className="w-full px-4 py-3 pr-16 border border-gray-300 rounded-lg focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-                placeholder="60"
-              />
-              <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-                <Clock className="h-4 w-4 text-gray-400" />
-              </div>
-            </div>
-            {step3Form.formState.errors.service_duration && (
-              <p className="mt-1 text-sm text-red-600">{step3Form.formState.errors.service_duration.message}</p>
-            )}
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Precio *
-            </label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
-              <input
-                {...step3Form.register('service_price')}
-                type="number"
-                min="1"
-                step="0.01"
-                className="w-full pl-8 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-                placeholder="50.00"
-              />
-            </div>
-            {step3Form.formState.errors.service_price && (
-              <p className="mt-1 text-sm text-red-600">{step3Form.formState.errors.service_price.message}</p>
-            )}
-          </div>
-        </div>
-
-        <div className="flex justify-between pt-6">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={prevStep}
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Anterior
-          </Button>
-          <Button
-            type="submit"
-            loading={loading}
-          >
-            Finalizar configuración
-            <CheckCircle className="ml-2 h-4 w-4" />
-          </Button>
-        </div>
-      </form>
-    </div>
-  )
-
-  const renderStep4 = () => (
-    <div className="text-center space-y-8">
-      <div className="mb-8">
-        <div className="bg-gradient-to-r from-primary-500 to-secondary-400 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
-          <CheckCircle className="h-10 w-10 text-white" />
-        </div>
-        <h2 className="text-3xl font-bold text-gray-900 mb-4">¡Felicitaciones! 🎉</h2>
-        <p className="text-xl text-gray-600 mb-6">
-          Tu sistema está configurado y listo para usar
-        </p>
-      </div>
-
-      <div className="bg-gradient-to-r from-primary-50 to-secondary-50 rounded-xl p-8 mb-8">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Lo que puedes hacer ahora:</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="text-center">
-            <div className="bg-primary-100 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
-              <Calendar className="h-6 w-6 text-primary-600" />
-            </div>
-            <h4 className="font-medium text-gray-900 mb-2">Crear Reservas</h4>
-            <p className="text-sm text-gray-600">Programa citas con tu calendario interactivo</p>
-          </div>
-          <div className="text-center">
-            <div className="bg-secondary-100 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
-              <Users className="h-6 w-6 text-secondary-600" />
-            </div>
-            <h4 className="font-medium text-gray-900 mb-2">Gestionar Clientes</h4>
-            <p className="text-sm text-gray-600">Administra tu base de datos completa</p>
-          </div>
-          <div className="text-center">
-            <div className="bg-green-100 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
-              <Star className="h-6 w-6 text-green-600" />
-            </div>
-            <h4 className="font-medium text-gray-900 mb-2">Ver Métricas</h4>
-            <p className="text-sm text-gray-600">Analiza el rendimiento de tu negocio</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-8">
-        <div className="flex items-center justify-center">
-          <div className="flex items-center">
-            <Clock className="h-5 w-5 text-yellow-600 mr-2" />
-            <span className="text-sm font-medium text-yellow-800">
-              Tienes 30 días de prueba gratuita para explorar todas las funcionalidades
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <div className="space-y-4">
-        <Link to={`/auth?fromOnboarding=true&email=${encodeURIComponent(JSON.parse(localStorage.getItem('onboarding_profile') || '{}').email || '')}`}>
-          <Button size="lg">
-            Iniciar Sesión
-            <ArrowRight className="ml-2 h-5 w-5" />
-          </Button>
-        </Link>
-        <p className="text-sm text-gray-500">
-          ¿Necesitas ayuda? Nuestro equipo de soporte está disponible 24/7
-        </p>
-      </div>
-    </div>
-  )
 
   const renderWelcomeStep = () => {
     return (
@@ -943,19 +549,437 @@ const Onboarding: React.FC = () => {
     )
   }
 
+  const renderStep3 = () => (
+    <div className="space-y-8">
+      <div className="text-center">
+        <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-primary-100">
+          <Building2 className="h-6 w-6 text-primary-600" />
+        </div>
+        <h2 className="mt-4 text-2xl font-bold text-gray-900">
+          Crea tu Cuenta
+        </h2>
+        <p className="mt-1 text-gray-500">
+          Comienza configurando tu cuenta empresarial
+        </p>
+      </div>
+
+      <form onSubmit={step3Form.handleSubmit(handleStep3Submit)} className="space-y-6">
+        <div className="space-y-6">
+
+          <div>
+            <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+              Nombre Completo
+            </label>
+            <input
+              type="text"
+              {...step3Form.register('name')}
+              autoComplete="name"
+              className="appearance-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
+              placeholder="Tu nombre completo"
+            />
+            {step3Form.formState.errors.name && (
+              <p className="mt-1 text-sm text-red-600">{step3Form.formState.errors.name.message}</p>
+            )}
+          </div>
+
+          <div>
+            <label htmlFor="companyName" className="block text-sm font-medium text-gray-700">
+              Nombre de la Empresa
+            </label>
+            <input
+              type="text"
+              {...step3Form.register('companyName')}
+              autoComplete="companyName"
+              className="appearance-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
+              placeholder="Nombre de tu empresa"
+            />
+            {step3Form.formState.errors.companyName && (
+              <p className="mt-1 text-sm text-red-600">{step3Form.formState.errors.companyName.message}</p>
+            )}
+          </div>
+
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+              Email
+            </label>
+            <input
+              type="email"
+              {...step3Form.register('email')}
+              autoComplete="email"
+              className="appearance-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
+              placeholder="tu@email.com"
+            />
+            {step3Form.formState.errors.email && (
+              <p className="mt-1 text-sm text-red-600">{step3Form.formState.errors.email.message}</p>
+            )}
+          </div>
+
+          <div>
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+              Contraseña
+            </label>
+            <input
+              type="password"
+              {...step3Form.register('password')}
+              className="appearance-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
+              placeholder="Mínimo 6 caracteres"
+            />
+            {step3Form.formState.errors.password && (
+              <p className="mt-1 text-sm text-red-600">{step3Form.formState.errors.password.message}</p>
+            )}
+          </div>
+
+          <div>
+            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+              Confirmar Contraseña
+            </label>
+            <input
+              type="password"
+              {...step3Form.register('confirmPassword')}
+              className="appearance-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
+              placeholder="Confirma tu contraseña"
+            />
+            {step3Form.formState.errors.confirmPassword && (
+              <p className="mt-1 text-sm text-red-600">{step3Form.formState.errors.confirmPassword.message}</p>
+            )}
+          </div>
+        </div>
+
+        <div className="flex justify-between">
+          <Button
+            type="button"
+            onClick={prevStep}
+            variant="outline"
+          >
+            Atrás
+          </Button>
+          <Button
+            type="submit"
+            loading={loading}
+          >
+            Continuar
+            <ArrowRight className="ml-2 h-5 w-5" />
+          </Button>
+        </div>
+      </form>
+    </div>
+  )
+
+  const renderStep4 = () => (
+    <div className="space-y-6">
+      <div className="text-center mb-8">
+        <div className="bg-secondary-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+          <Users className="h-8 w-8 text-secondary-600" />
+        </div>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Agrega tu primer profesional</h2>
+        <p className="text-gray-600">Configura al primer miembro de tu equipo</p>
+      </div>
+
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+        <div className="flex items-start">
+          <Target className="h-5 w-5 text-blue-600 mt-0.5 mr-3" />
+          <div>
+            <h4 className="text-sm font-medium text-blue-900">💡 Consejo</h4>
+            <p className="text-sm text-blue-700 mt-1">
+              Si trabajas solo, agregate a ti mismo como profesional. Si tienes un equipo, comienza con el primer miembro.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <form onSubmit={step4Form.handleSubmit(handleStep4Submit)} className="space-y-6">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Nombre del profesional *
+          </label>
+          <input
+            {...step4Form.register('professional_name')}
+            type="text"
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+            placeholder="Ej: Carlos Rodríguez"
+          />
+          {step4Form.formState.errors.professional_name && (
+            <p className="mt-1 text-sm text-red-600">{step4Form.formState.errors.professional_name.message}</p>
+          )}
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Email *
+          </label>
+          <input
+            {...step4Form.register('professional_email')}
+            type="email"
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+            placeholder="carlos@email.com"
+          />
+          {step4Form.formState.errors.professional_email && (
+            <p className="mt-1 text-sm text-red-600">{step4Form.formState.errors.professional_email.message}</p>
+          )}
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Teléfono *
+          </label>
+          <input
+            {...step4Form.register('professional_phone')}
+            type="tel"
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+            placeholder="+56 9 8765 4321"
+          />
+          {step4Form.formState.errors.professional_phone && (
+            <p className="mt-1 text-sm text-red-600">{step4Form.formState.errors.professional_phone.message}</p>
+          )}
+        </div>
+
+        <div className="space-y-1">
+          <label className="block text-sm font-medium text-gray-700">
+            Especialidades
+          </label>
+          <div className="space-y-2">
+            {step4Form.watch('specialties')?.map((_: any, index: number) => (
+              <div key={index} className="flex gap-2">
+                <input
+                  {...step4Form.register(`specialties.${index}.value`)}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                  placeholder="Ej: Masajes, Terapia, etc."
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const values = step4Form.getValues('specialties') || [];
+                    if (values.length > 1) {
+                      const newValues = values.filter((_, i: number) => i !== index);
+                      step4Form.setValue('specialties', newValues);
+                    }
+                  }}
+                  className="inline-flex items-center p-2 border border-transparent rounded-md text-red-600 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                >
+                  <Trash className="h-5 w-5" />
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={() => {
+                const values = step4Form.getValues('specialties') || [];
+                step4Form.setValue('specialties', [...values, { value: '' }]);
+              }}
+              className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+            >
+              <Plus className="h-5 w-5 mr-2" />
+              Agregar Especialidad
+            </button>
+          </div>
+          {step4Form.formState.errors.specialties && (
+            <p className="text-sm text-red-600">{step4Form.formState.errors.specialties.message}</p>
+          )}
+        </div>
+
+        <div className="flex justify-between pt-6">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={prevStep}
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Anterior
+          </Button>
+          <Button
+            type="submit"
+            loading={loading}
+          >
+            Continuar
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
+      </form>
+    </div>
+  )
+
+  const renderStep5 = () => (
+    <div className="space-y-6">
+      <div className="text-center mb-8">
+        <div className="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+          <Briefcase className="h-8 w-8 text-green-600" />
+        </div>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Define tu primer servicio</h2>
+        <p className="text-gray-600">Configura los servicios que ofreces a tus clientes</p>
+      </div>
+
+      <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+        <div className="flex items-start">
+          <Zap className="h-5 w-5 text-green-600 mt-0.5 mr-3" />
+          <div>
+            <h4 className="text-sm font-medium text-green-900">⚡ Automatización</h4>
+            <p className="text-sm text-green-700 mt-1">
+              Una vez configurado, el sistema calculará automáticamente el tiempo total y el costo de cada reserva.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <form onSubmit={step5Form.handleSubmit(handleStep5Submit)} className="space-y-6">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Nombre del servicio *
+          </label>
+          <input
+            {...step5Form.register('service_name')}
+            type="text"
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+            placeholder="Ej: Masaje Relajante"
+          />
+          {step5Form.formState.errors.service_name && (
+            <p className="mt-1 text-sm text-red-600">{step5Form.formState.errors.service_name.message}</p>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Duración (minutos) *
+            </label>
+            <div className="relative">
+              <input
+                {...step5Form.register('service_duration')}
+                type="number"
+                min="15"
+                step="15"
+                className="w-full px-4 py-3 pr-16 border border-gray-300 rounded-lg focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                placeholder="60"
+              />
+              <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                <Clock className="h-4 w-4 text-gray-400" />
+              </div>
+            </div>
+            {step5Form.formState.errors.service_duration && (
+              <p className="mt-1 text-sm text-red-600">{step5Form.formState.errors.service_duration.message}</p>
+            )}
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Precio *
+            </label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+              <input
+                {...step5Form.register('service_price')}
+                type="number"
+                min="1"
+                step="0.01"
+                className="w-full pl-8 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                placeholder="50.00"
+              />
+            </div>
+            {step5Form.formState.errors.service_price && (
+              <p className="mt-1 text-sm text-red-600">{step5Form.formState.errors.service_price.message}</p>
+            )}
+          </div>
+        </div>
+
+        <div className="flex justify-between pt-6">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={prevStep}
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Anterior
+          </Button>
+          <Button
+            type="submit"
+            loading={loading}
+          >
+            Finalizar configuración
+            <CheckCircle className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
+      </form>
+    </div>
+  )
+
+  const renderStep6 = () => (
+    <div className="text-center space-y-8">
+      <div className="mb-8">
+        <div className="bg-gradient-to-r from-primary-500 to-secondary-400 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+          <CheckCircle className="h-10 w-10 text-white" />
+        </div>
+        <h2 className="text-3xl font-bold text-gray-900 mb-4">¡Felicitaciones! 🎉</h2>
+        <p className="text-xl text-gray-600 mb-6">
+          Tu sistema está configurado y listo para usar
+        </p>
+      </div>
+
+      <div className="bg-gradient-to-r from-primary-50 to-secondary-50 rounded-xl p-8 mb-8">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Lo que puedes hacer ahora:</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="text-center">
+            <div className="bg-primary-100 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
+              <Calendar className="h-6 w-6 text-primary-600" />
+            </div>
+            <h4 className="font-medium text-gray-900 mb-2">Crear Reservas</h4>
+            <p className="text-sm text-gray-600">Programa citas con tu calendario interactivo</p>
+          </div>
+          <div className="text-center">
+            <div className="bg-secondary-100 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
+              <Users className="h-6 w-6 text-secondary-600" />
+            </div>
+            <h4 className="font-medium text-gray-900 mb-2">Gestionar Clientes</h4>
+            <p className="text-sm text-gray-600">Administra tu base de datos completa</p>
+          </div>
+          <div className="text-center">
+            <div className="bg-green-100 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
+              <Star className="h-6 w-6 text-green-600" />
+            </div>
+            <h4 className="font-medium text-gray-900 mb-2">Ver Métricas</h4>
+            <p className="text-sm text-gray-600">Analiza el rendimiento de tu negocio</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-8">
+        <div className="flex items-center justify-center">
+          <div className="flex items-center">
+            <Clock className="h-5 w-5 text-yellow-600 mr-2" />
+            <span className="text-sm font-medium text-yellow-800">
+              Tienes 30 días de prueba gratuita para explorar todas las funcionalidades
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <Link to={`/auth?fromOnboarding=true&email=${encodeURIComponent(JSON.parse(localStorage.getItem('onboarding_profile') || '{}').email || '')}`}>
+          <Button size="lg">
+            Iniciar Sesión
+            <ArrowRight className="ml-2 h-5 w-5" />
+          </Button>
+        </Link>
+        <p className="text-sm text-gray-500">
+          ¿Necesitas ayuda? Nuestro equipo de soporte está disponible 24/7
+        </p>
+      </div>
+    </div>
+  )
+
+  
+
   const renderCurrentStep = () => {
     switch (currentStep) {
-      case 0: return renderWelcomeStep()
-      case 1: 
+      case 1: return renderWelcomeStep()
+      case 2: 
         // Si hay un plan preseleccionado, saltar este paso
         if (selectedPlan && (selectedPlan === 'basic' || selectedPlan === 'pro')) {
-          return null
+          nextStep(); // Avanzar automáticamente si hay plan preseleccionado
+          return null;
         }
         return renderPlanStep()
-      case 2: return renderStep1()
-      case 3: return renderStep2()
-      case 4: return renderStep3()
-      case 5: return renderStep4()
+      case 3: return renderStep3()
+      case 4: return renderStep4()
+      case 5: return renderStep5()
+      case 6: return renderStep6()
       default: return renderWelcomeStep()
     }
   }

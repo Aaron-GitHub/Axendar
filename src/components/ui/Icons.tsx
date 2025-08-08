@@ -13,7 +13,8 @@ import {
   Download,
   Plus,
   Edit,
-  Trash
+  Trash,
+  Eye
 } from 'lucide-react'
 
 // Re-exportar los iconos con nombres consistentes
@@ -33,6 +34,7 @@ export const IconPlus = Plus
 export const IconEdit = Edit
 export const IconTrash = Trash
 export const IconService = Briefcase
+export const IconView = Eye
 
 
 

@@ -113,9 +113,18 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
             )}
             <div>
               <p className="font-medium text-gray-900">{professional.name}</p>
-              {professional.specialties && (
-                <p className="text-sm text-gray-500">{professional.specialties}</p>
-              )}
+                {professional.specialties && professional.specialties.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {professional.specialties.map((specialty, index) => (
+                      <span
+                        key={index}
+                        className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800"
+                      >
+                        {specialty}
+                      </span>
+                    ))}
+                  </div>
+                )}
             </div>
           </div>
         </div>

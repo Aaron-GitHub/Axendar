@@ -38,8 +38,8 @@ export interface Professional {
   available: boolean
   is_public: boolean
   user_id: string
-  created_at: string
-  updated_at: string
+  created_at?: string
+  updated_at?: string
 }
 
 export interface Service {
@@ -72,6 +72,9 @@ export interface Reservation {
   clients?: Client
   professionals?: Professional
   services?: Service
+  // Propiedades calculadas
+  start_time_formatted?: string
+  total_amount_formatted?: string
 }
 
 export interface ProfessionalService {

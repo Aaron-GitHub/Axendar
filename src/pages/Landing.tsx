@@ -2,7 +2,7 @@ import React, { useState, useEffect, FormEvent } from 'react'
 import toast, { Toaster } from 'react-hot-toast'
 import { Link } from 'react-router-dom'
 import Button from '../components/ui/Button'
-import { PricingSection } from '../components/PricingSection'
+import { PricingSection } from '../components/landing/PricingSection'
 import { sendEmail } from '../services/emailService'
 import { 
   ArrowRight, 
