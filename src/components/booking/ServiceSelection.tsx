@@ -1,30 +1,35 @@
 import React, { useEffect, useState } from 'react'
 import { Service } from '../../types'
-import { supabase } from '../../lib/supabase'
+import { supabaseAdmin } from '../../lib/supabase'
 import { Clock, DollarSign } from 'lucide-react'
+import { hexToRgba } from '../../utils/color'
 
 interface ServiceSelectionProps {
   selectedService: Service | null
   onSelect: (service: Service) => void
   userId: string
+  profile_color: string
 }
 
 const ServiceSelection: React.FC<ServiceSelectionProps> = ({
   selectedService,
   onSelect,
-  userId
+  userId,
+  profile_color
 }) => {
   const [services, setServices] = useState<Service[]>([])
   const [loading, setLoading] = useState(true)
+  const [hoveredId, setHoveredId] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchServices = async () => {
       try {
         // Obtener servicios públicos del usuario
-        const { data, error } = await supabase
+        const { data, error } = await supabaseAdmin
           .from('services')
           .select('*')
           .eq('user_id', userId)
+          .eq('active', true)
           .order('name')
 
         if (error) throw error
@@ -65,11 +70,20 @@ const ServiceSelection: React.FC<ServiceSelectionProps> = ({
           <div
             key={service.id}
             onClick={() => onSelect(service)}
-            className={`p-4 rounded-lg border-2 cursor-pointer transition-all
-              ${selectedService?.id === service.id
-                ? 'border-primary-600 bg-primary-50'
-                : 'border-gray-200 hover:border-primary-200 hover:bg-gray-50'
-              }`}
+            className={`p-4 rounded-lg border-2 cursor-pointer transition-all hover:shadow-md`}
+            onMouseEnter={() => setHoveredId(service.id)}
+            onMouseLeave={() => setHoveredId(null)}
+            style={(() => {
+              const isSelected = selectedService?.id === service.id
+              const isHover = hoveredId === service.id
+              if (isSelected) {
+                return { borderColor: profile_color, backgroundColor: hexToRgba(profile_color, 0.15) }
+              }
+              if (isHover) {
+                return { borderColor: profile_color }
+              }
+              return { borderColor: '#e5e7eb' }
+            })()}
           >
             <h3 className="text-lg font-medium text-gray-900">{service.name}</h3>
             <div className="mt-2 space-y-2">

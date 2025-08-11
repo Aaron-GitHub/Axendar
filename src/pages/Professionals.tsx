@@ -5,16 +5,22 @@ import { useAuthContext } from '../contexts/AuthContext'
 import { Professional } from '../types'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
 import Button from '../components/ui/Button'
-import { IconSearch, IconDownload, IconPlus, IconUsers, IconEdit, IconTrash } from '../components/ui/Icons'
+import { IconSearch, IconDownload, IconPlus, IconUsers, IconEdit } from '../components/ui/Icons'
 import toast from 'react-hot-toast'
 import ConfirmationModal from '../components/ui/ConfirmationModal'
 import { DataTable } from '../components/ui/DataTable'
 import { ColumnDef } from '@tanstack/react-table'
+import { useIsLg } from '../hooks/useBreakpoint'
+import { PLAN_LIMITS } from '../constants/plans'
+
+// useIsLg se importa desde hooks/useBreakpoint
 
 const Professionals = () => {
-  // Definición de columnas para la tabla
-  const columns = useMemo<ColumnDef<Professional>[]>(
-    () => [
+  const isLg = useIsLg()
+  // Límite por plan (desde constants)
+  // Definición de columnas para la tabla (condicional por breakpoint)
+  const columns = useMemo<ColumnDef<Professional>[]>(() => {
+    const baseCols: ColumnDef<Professional>[] = [
       {
         accessorKey: 'name',
         header: 'Profesional',
@@ -34,13 +40,14 @@ const Professionals = () => {
           </div>
         ),
       },
+    ]
+
+    const desktopOnlyCols: ColumnDef<Professional>[] = [
       {
         accessorKey: 'phone',
         header: 'Teléfono',
         cell: ({ row }) => (
-          <div className="text-sm text-gray-900">
-            {row.original.phone || 'Sin teléfono'}
-          </div>
+          <div className="text-sm text-gray-900">{row.original.phone || 'Sin teléfono'}</div>
         ),
       },
       {
@@ -49,7 +56,10 @@ const Professionals = () => {
         cell: ({ row }) => (
           <div className="flex flex-wrap gap-1">
             {row.original.specialties.map((specialty, index) => (
-              <span key={index} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
+              <span
+                key={index}
+                className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800"
+              >
                 {specialty}
               </span>
             ))}
@@ -63,16 +73,16 @@ const Professionals = () => {
         accessorKey: 'hourly_rate',
         header: 'Tarifa',
         cell: ({ row }) => (
-          <div className="text-sm text-gray-900">
-            ${row.original.hourly_rate.toFixed(2)}/hora
-          </div>
+          <div className="text-sm text-gray-900">${row.original.hourly_rate.toFixed(2)}/hora</div>
         ),
       },
       {
         accessorKey: 'available',
         header: 'Estado',
         cell: ({ row }) => (
-          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${row.original.available ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+          <span
+            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${row.original.available ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
+          >
             {row.original.available ? 'Disponible' : 'No disponible'}
           </span>
         ),
@@ -86,31 +96,41 @@ const Professionals = () => {
           </div>
         ),
       },
-      {
-        id: 'actions',
-        header: 'Acciones',
-        cell: ({ row }) => (
-          <div className="flex items-center justify-end space-x-2">
-            <button
-              onClick={() => handleEditProfessional(row.original)}
-              className="text-primary-600 hover:text-primary-900"
-              title="Editar profesional"
-            >
-              <IconEdit className="h-5 w-5" />
-            </button>
-            <button
-              onClick={() => handleDeleteProfessional(row.original.id)}
-              className="text-red-600 hover:text-red-900"
-              title="Eliminar profesional"
-            >
-              <IconTrash className="h-5 w-5" />
-            </button>
+    ]
+
+    const actionsCol: ColumnDef<Professional> = {
+      id: 'actions',
+      header: 'Acciones',
+      cell: ({ row }) => (
+        <div className="px-2 py-1">
+          <div className={`flex items-center ${isLg ? 'justify-end space-x-2' : 'justify-end'}`}>
+            {isLg ? (
+              <button
+                onClick={() => handleEditProfessional(row.original)}
+                className="text-primary-600 hover:text-primary-900"
+                aria-label="Editar profesional"
+                title="Editar profesional"
+              >
+                <IconEdit className="h-5 w-5" />
+              </button>
+            ) : (
+              <button
+                onClick={() => handleEditProfessional(row.original)}
+                className="h-10 w-10 inline-flex items-center justify-center rounded-full border border-gray-300 bg-white text-primary-700 hover:bg-gray-50 active:bg-gray-100"
+                aria-label="Editar profesional"
+                title="Editar profesional"
+              >
+                <IconEdit className="h-5 w-5" />
+              </button>
+            )}
           </div>
-        ),
-      },
-    ],
-    []
-  )
+        </div>
+      ),
+    }
+
+    // En móvil solo mostramos nombre y acciones; en desktop añadimos el resto
+    return isLg ? [...baseCols, ...desktopOnlyCols, actionsCol] : [...baseCols, actionsCol]
+  }, [isLg])
 
   const { user } = useAuthContext()
   const [professionals, setProfessionals] = useState<Professional[]>([])
@@ -186,7 +206,46 @@ const Professionals = () => {
     }
   }, [])
 
+  // Plan de suscripción desde profiles
+  const [plan, setPlan] = useState<'free' | 'basic' | 'premium' | 'enterprise' | null>(null)
+  const [loadingPlan, setLoadingPlan] = useState(false)
+
+  const fetchProfilePlan = useCallback(async () => {
+    if (!user?.id) return
+    setLoadingPlan(true)
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('subscription_plan')
+        .eq('id', user.id)
+        .single()
+
+      if (error) throw error
+      if (data?.subscription_plan) setPlan(data.subscription_plan)
+    } catch (error) {
+      console.error('Error fetching profile plan:', error)
+    } finally {
+      setLoadingPlan(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchProfilePlan()
+  }, [user])
+
+  const professionalLimit = plan ? PLAN_LIMITS[plan] : 0
+  const canAddProfessional = plan ? professionals.length < professionalLimit : false
+
   const handleNewProfessional = () => {
+    if (!plan) {
+      toast.error('No se pudo determinar tu plan. Intenta nuevamente.')
+      return
+    }
+    if (!canAddProfessional) {
+      const limitText = professionalLimit === Number.POSITIVE_INFINITY ? 'ilimitado' : professionalLimit
+      toast.error(`Has alcanzado el límite de profesionales para tu plan (${plan}). Límite: ${limitText}.`)
+      return
+    }
     navigate('/app/professionals/new')
   }
 
@@ -194,11 +253,11 @@ const Professionals = () => {
     navigate(`/app/professionals/${professional.id}`)
   }
 
-  const handleDeleteProfessional = (professionalId: string) => {
+  /*const handleDeleteProfessional = (professionalId: string) => {
     if (!user) return
     setProfessionalToDelete(professionalId)
     setShowDeleteConfirmation(true)
-  }
+  }*/
 
   const confirmDeleteProfessional = async () => {
     if (!user || !professionalToDelete) return
@@ -270,7 +329,7 @@ const Professionals = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="">
       {loading && !professionals.length ? (
         <div className="flex justify-center items-center h-64">
           <LoadingSpinner />
@@ -278,61 +337,61 @@ const Professionals = () => {
       ) : (
         <>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center">
-            <div className="bg-primary-100 p-3 rounded-lg">
-              <IconUsers className="h-6 w-6 text-primary-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total Profesionales</p>
-              <p className="text-2xl font-bold text-gray-900">{professionals.length}</p>
+      {/* Header compacto */}
+      <div className="mb-2 bg-white p-2 rounded-lg shadow-sm border border-gray-200">
+        <div className="flex items-center justify-between gap-2">
+          {/* Chips KPI */}
+          <div className="-mx-1 flex-1 overflow-x-auto md:overflow-visible">
+            <div className="px-1 inline-flex gap-2 min-w-max md:min-w-0 md:flex md:flex-wrap">
+              <div className="flex items-center gap-2 rounded-md border border-gray-200 bg-white px-2 py-1 shadow-sm">
+                <span className="inline-flex h-6 w-6 items-center justify-center rounded bg-primary-100">
+                  <IconUsers className="h-3.5 w-3.5 text-primary-600" />
+                </span>
+                <div className="leading-tight">
+                  <p className="text-[10px] uppercase tracking-wide text-gray-500">Total</p>
+                  <p className="text-sm font-semibold text-gray-900">{professionals.length}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 rounded-md border border-gray-200 bg-white px-2 py-1 shadow-sm">
+                <span className="inline-flex h-6 w-6 items-center justify-center rounded bg-green-100">
+                  <IconUsers className="h-3.5 w-3.5 text-green-600" />
+                </span>
+                <div className="leading-tight">
+                  <p className="text-[10px] uppercase tracking-wide text-gray-500">Nuevos</p>
+                  <p className="text-sm font-semibold text-gray-900">{professionals.filter(p => {
+                    const d = new Date(p.created_at || '')
+                    const now = new Date()
+                    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
+                  }).length}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 rounded-md border border-gray-200 bg-white px-2 py-1 shadow-sm">
+                <span className="inline-flex h-6 w-6 items-center justify-center rounded bg-blue-100">
+                  <IconSearch className="h-3.5 w-3.5 text-blue-600" />
+                </span>
+                <div className="leading-tight">
+                  <p className="text-[10px] uppercase tracking-wide text-gray-500">Disponibles</p>
+                  <p className="text-sm font-semibold text-gray-900">{professionals.filter(p => p.available).length}</p>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center">
-            <div className="bg-green-100 p-3 rounded-lg">
-              <IconUsers className="h-6 w-6 text-green-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Nuevos este mes</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {professionals.filter((p) => new Date(p.created_at || '').getMonth() === new Date().getMonth()).length}
-              </p>
-            </div>
+          {/* Acciones */}
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              variant="outline"
+              onClick={handleExportToCSV}
+              disabled={professionals.length === 0}
+              className="text-xs md:text-sm gap-1 h-8 px-2"
+            >
+              <IconDownload className="h-4 w-4" />
+              Exportar CSV
+            </Button>
+            <Button onClick={handleNewProfessional} className="text-xs md:text-sm gap-1 h-8 px-2" disabled={!canAddProfessional || loadingPlan}>
+              <IconPlus className="h-4 w-4" />
+              Nuevo Profesional
+            </Button>
           </div>
-        </div>
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center">
-            <div className="bg-blue-100 p-3 rounded-lg">
-              <IconSearch className="h-5 w-5 text-blue-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Disponibles</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {professionals.filter(p => p.available).length}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-      {/* Acciones */}
-      <div className="px-6 py-4 border-b border-gray-200 flex flex-wrap items-center justify-end gap-4">
-          <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            onClick={handleExportToCSV}
-            disabled={professionals.length === 0}
-          >
-            <IconDownload className="h-5 w-5" />
-            Exportar CSV
-          </Button>
-          <Button onClick={handleNewProfessional}>
-            <IconPlus className="h-5 w-5" />
-            Nuevo Profesional
-          </Button>
         </div>
       </div>
       <div className="mt-4">

@@ -5,7 +5,8 @@ import { Calendar, Loader2 } from 'lucide-react'
 import moment from 'moment'
 import 'moment/locale/es'
 import { getAvailableTimeSlots } from '../../services/bookingService'
-import { supabase } from '../../lib/supabase'
+import { supabaseAdmin } from '../../lib/supabase'
+import { hexToRgba } from '../../utils/color'
 
 // Forzar el locale a español globalmente
 moment.locale('es')
@@ -22,6 +23,7 @@ interface DateTimeSelectionProps {
   selectedTime: string | null
   onSelect: (date: Date, time: string) => void
   userId: string
+  profile_color: string
 }
 
 const dayTranslations: { [key: string]: string } = {
@@ -66,6 +68,7 @@ const DateTimeSelection: React.FC<DateTimeSelectionProps> = ({
   selectedTime: initialTime,
   onSelect,
   userId,
+  profile_color,
 }) => {
   const [currentMonth, setCurrentMonth] = useState(moment().locale('es'))
   const [selectedDate, setSelectedDate] = useState<Date | null>(initialDate)
@@ -73,6 +76,7 @@ const DateTimeSelection: React.FC<DateTimeSelectionProps> = ({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [availableSlots, setAvailableSlots] = useState<string[]>([])
+  const [hoveredTime, setHoveredTime] = useState<string | null>(null)
 
   // Memorizar los días de la semana para evitar recálculos
   const localizedWeekDays = useMemo(() => getLocalizedWeekdays(), [])
@@ -153,7 +157,7 @@ const DateTimeSelection: React.FC<DateTimeSelectionProps> = ({
   // Cargar los horarios del profesional
   useEffect(() => {
     const loadProfessionalSchedules = async () => {
-      const { data: schedules, error } = await supabase
+      const { data: schedules, error } = await supabaseAdmin
         .from('professional_schedules')
         .select('*')
         .eq('professional_id', selectedProfessional.id)
@@ -263,12 +267,14 @@ const DateTimeSelection: React.FC<DateTimeSelectionProps> = ({
                   key={index}
                   onClick={() => handleDateSelect(date)}
                   disabled={isDisabled}
-                  className={`
-                    p-2 text-sm rounded-lg
-                    ${isDisabled ? 'text-gray-300 cursor-not-allowed bg-red-50' : 'hover:bg-primary-50'}
-                    ${!isCurrentMonth ? 'text-gray-300' : 'text-gray-900'}
-                    ${isSelected ? 'bg-primary-100 text-primary-700 font-medium' : ''}
-                  `}
+                  className={`p-2 text-sm rounded-lg ${isDisabled ? 'text-gray-300 cursor-not-allowed' : ''} ${!isCurrentMonth ? 'text-gray-300' : 'text-gray-900'}`}
+                  style={
+                    isDisabled
+                      ? { backgroundColor: 'rgba(255,0,0,0.05)' }
+                      : isSelected
+                        ? { backgroundColor: hexToRgba(profile_color, 0.15), color: profile_color, fontWeight: 600 as any }
+                        : undefined
+                  }
                 >
                   {date.date()}
                 </button>
@@ -303,13 +309,18 @@ const DateTimeSelection: React.FC<DateTimeSelectionProps> = ({
                     <button
                       key={time}
                       onClick={() => handleTimeSelect(time)}
-                      className={`
-                        p-2 text-sm rounded-lg border
-                        ${isSelected
-                          ? 'bg-primary-100 border-primary-600 text-primary-700'
-                          : 'border-gray-200 hover:border-primary-200 hover:bg-primary-50'
+                      className={`p-2 text-sm rounded-lg border transition-colors`}
+                      onMouseEnter={() => setHoveredTime(time)}
+                      onMouseLeave={() => setHoveredTime(null)}
+                      style={(() => {
+                        if (isSelected) {
+                          return { backgroundColor: hexToRgba(profile_color, 0.15), borderColor: profile_color, color: profile_color, fontWeight: 500 }
                         }
-                      `}
+                        if (hoveredTime === time) {
+                          return { borderColor: profile_color }
+                        }
+                        return { borderColor: '#e5e7eb' }
+                      })()}
                     >
                       {time}
                     </button>

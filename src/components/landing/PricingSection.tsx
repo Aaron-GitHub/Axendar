@@ -1,71 +1,13 @@
 import { Link } from "react-router-dom";
 import Button from "../ui/Button";
 import { CheckCircle} from "lucide-react";
-
-export interface PlanFeature {
-  text: string;
-}
-
-export interface PricingPlan {
-  name: string;
-  price: string;
-  features: PlanFeature[];
-  planId: "free" | "basic" | "pro";
-  isPopular?: boolean;
-  buttonText: string;
-  buttonVariant?: "primary" | "outline" | "secondary" | "ghost" | "danger";
-}
+import { defaultPlans } from "../../constants/plans";
 
 interface PricingSectionProps {
   title?: string;
   description?: string;
   className?: string;
 }
-
-export const defaultPlans: PricingPlan[] = [
-  {
-    name: "Gratis",
-    price: "0",
-    planId: "free",
-    buttonText: "Comenzar Gratis",
-    buttonVariant: "outline",
-    features: [
-      { text: "Hasta 1 profesional" },
-      { text: "Calendario básico" },
-      { text: "Gestión de clientes" },
-      { text: "Notificaciones por email" },
-    ],
-  },
-  {
-    name: "Medio",
-    price: "10.000",
-    planId: "basic",
-    isPopular: true,
-    buttonText: "Prueba 30 días gratis",
-    buttonVariant: "outline",
-    features: [
-      { text: "Hasta 5 profesionales" },
-      { text: "Calendario avanzado" },
-      { text: "CRM completo" },
-      { text: "Notificaciones SMS" },
-      { text: "Reportes básicos" },
-    ],
-  },
-  {
-    name: "Pro",
-    price: "25.000",
-    planId: "pro",
-    buttonText: "Prueba 30 días gratis",
-    buttonVariant: "outline",
-    features: [
-      { text: "Hasta 10 profesionales" },
-      { text: "Calendario premium" },
-      { text: "CRM avanzado" },
-      { text: "Notificaciones personalizadas" },
-      { text: "Reportes avanzados" },
-    ],
-  },
-];
 
 export function PricingSection({
   title = "Planes diseñados para tu negocio",

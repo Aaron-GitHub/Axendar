@@ -1,32 +1,37 @@
 import React, { useEffect, useState } from 'react'
 import { Professional, Service } from '../../types'
-import { supabase } from '../../lib/supabase'
+import { supabaseAdmin } from '../../lib/supabase'
 import { Mail, Phone } from 'lucide-react'
+import { hexToRgba } from '../../utils/color'
 
 interface ProfessionalSelectionProps {
   selectedService: Service
   selectedProfessional: Professional | null
   onSelect: (professional: Professional) => void
   userId: string
+  profile_color: string
 }
 
 const ProfessionalSelection: React.FC<ProfessionalSelectionProps> = ({
   selectedService,
   selectedProfessional,
   onSelect,
-  userId
+  userId,
+  profile_color
 }) => {
   const [professionals, setProfessionals] = useState<Professional[]>([])
   const [loading, setLoading] = useState(true)
+  const [hoveredId, setHoveredId] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchProfessionals = async () => {
       try {
         // Obtener profesionales públicos asociados al servicio y al usuario
-        const { data, error } = await supabase
+        const { data, error } = await supabaseAdmin
           .from('professionals')
           .select('*, professional_services!inner(*)')
           .eq('user_id', userId)
+          .eq('available', true)
           .eq('professional_services.service_id', selectedService.id)
           .order('name')
 
@@ -74,11 +79,20 @@ const ProfessionalSelection: React.FC<ProfessionalSelectionProps> = ({
           <div
             key={professional.id}
             onClick={() => onSelect(professional)}
-            className={`p-4 rounded-lg border-2 cursor-pointer transition-all
-              ${selectedProfessional?.id === professional.id
-                ? 'border-primary-600 bg-primary-50'
-                : 'border-gray-200 hover:border-primary-200 hover:bg-gray-50'
-              }`}
+            className={`p-4 rounded-lg border-2 cursor-pointer transition-all hover:shadow-md`}
+            onMouseEnter={() => setHoveredId(professional.id)}
+            onMouseLeave={() => setHoveredId(null)}
+            style={(() => {
+              const isSelected = selectedProfessional?.id === professional.id
+              const isHover = hoveredId === professional.id
+              if (isSelected) {
+                return { borderColor: profile_color, backgroundColor: hexToRgba(profile_color, 0.15) }
+              }
+              if (isHover) {
+                return { borderColor: profile_color }
+              }
+              return { borderColor: '#e5e7eb' }
+            })()}
           >
             <div className="flex items-start space-x-4">
               {professional.avatar_url ? (
@@ -88,8 +102,9 @@ const ProfessionalSelection: React.FC<ProfessionalSelectionProps> = ({
                   className="w-12 h-12 rounded-full"
                 />
               ) : (
-                <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center">
-                  <span className="text-primary-600 font-medium text-lg">
+                <div className="w-12 h-12 rounded-full flex items-center justify-center"
+                style={{ backgroundColor: hexToRgba(profile_color, 0.15), color: profile_color }}>
+                  <span className="font-medium text-lg" style={{ color: profile_color }}>
                     {professional.name.charAt(0)}
                   </span>
                 </div>
@@ -101,7 +116,8 @@ const ProfessionalSelection: React.FC<ProfessionalSelectionProps> = ({
                     {professional.specialties.map((specialty, index) => (
                       <span
                         key={index}
-                        className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800"
+                        className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                        style={{ backgroundColor: hexToRgba(profile_color, 0.15), color: profile_color }}
                       >
                         {specialty}
                       </span>

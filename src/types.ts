@@ -11,6 +11,7 @@ export interface Professional {
   updated_at?: string
   // Campos opcionales para compatibilidad con la base de datos
   is_public?: boolean
+  avatar_url?: string
 }
 
 export interface Service {

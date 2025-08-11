@@ -10,6 +10,7 @@ import ProfessionalBlocks from '../components/professionals/ProfessionalBlocks'
 import ProfessionalServicesForm from '../components/professionals/ProfessionalServicesForm'
 import Button from '../components/ui/Button'
 import { useAuthContext } from '../contexts/AuthContext'
+import { PLAN_LIMITS } from '../constants/plans'
 
 export default function ProfessionalDetails() {
   const { id } = useParams()
@@ -85,7 +86,45 @@ export default function ProfessionalDetails() {
 
         await fetchProfessional()
       } else {
-        // Crear nuevo profesional
+        // Crear nuevo profesional con validación de límite por plan
+        // 1) Obtener plan del perfil
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('subscription_plan')
+          .eq('id', user.id)
+          .single()
+
+        if (profileError) throw profileError
+
+        const plan = profile?.subscription_plan as 'free' | 'basic' | 'premium' | 'enterprise' | undefined
+        if (!plan) {
+          showToast({ type: 'error', title: 'Error', message: 'No se pudo determinar tu plan.' })
+          setSaving(false)
+          return
+        }
+
+        const limit = PLAN_LIMITS[plan]
+
+        // 2) Contar profesionales actuales
+        const { count, error: countError } = await supabase
+          .from('professionals')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+
+        if (countError) throw countError
+
+        if (typeof count === 'number' && count >= limit) {
+          const limitText = limit === Number.POSITIVE_INFINITY ? 'ilimitado' : limit
+          showToast({
+            type: 'error',
+            title: 'Límite alcanzado',
+            message: `Tu plan (${plan}) permite hasta ${limitText} profesionales.`
+          })
+          setSaving(false)
+          return
+        }
+
+        // 3) Insertar
         const { data: newProfessional, error } = await supabase
           .from('professionals')
           .insert([
@@ -122,18 +161,18 @@ export default function ProfessionalDetails() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-8">
+      <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
         <div className="max-w-5xl mx-auto">
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-3 sm:space-x-4">
             <Button
               variant="ghost"
               onClick={() => navigate('/app/professionals')}
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <div className="animate-pulse bg-gray-200 h-8 w-48 rounded"></div>
+            <div className="animate-pulse bg-gray-200 h-7 sm:h-8 w-40 sm:w-48 rounded"></div>
           </div>
-          <div className="mt-8 bg-white shadow rounded-lg p-6">
+          <div className="mt-6 sm:mt-8 bg-white shadow rounded-lg p-4 sm:p-6">
             <div className="animate-pulse space-y-4">
               <div className="h-4 bg-gray-200 rounded w-1/4"></div>
               <div className="h-4 bg-gray-200 rounded w-1/2"></div>
@@ -146,11 +185,11 @@ export default function ProfessionalDetails() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-5xl mx-auto space-y-8">
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
+      <div className="max-w-5xl mx-auto space-y-6 sm:space-y-8">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex items-center space-x-3 sm:space-x-4">
             <Button
               variant="ghost"
               onClick={() => navigate('/app/professionals')}
@@ -158,32 +197,32 @@ export default function ProfessionalDetails() {
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
                 {id ? 'Editar Profesional' : 'Nuevo Profesional'}
               </h1>
-              <p className="text-sm text-gray-500">
+              <p className="text-xs sm:text-sm text-gray-500">
                 {id ? 'Modifica los datos del profesional' : 'Crea un nuevo profesional'}
               </p>
             </div>
           </div>
-          <User2 className="h-8 w-8 text-gray-400" />
+          <User2 className="h-8 w-8 text-gray-400 hidden sm:block" />
         </div>
 
         {/* Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
           {/* Columna Principal */}
           <div className="lg:col-span-2 space-y-8">
             {/* Datos del Profesional */}
             <div className="space-y-6">
               {/* Tabs */}
-              <div className="border-b border-gray-200">
-                <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+              <div className="border-b border-gray-200 -mx-4 px-4 sm:mx-0 sm:px-0">
+                <nav className="-mb-px flex space-x-4 md:space-x-8 overflow-x-auto whitespace-nowrap no-scrollbar" aria-label="Tabs">
                   {tabs.map(tab => (
                     <button
                       key={tab.id}
                       onClick={() => setActiveTab(tab.id)}
                       className={`
-                        whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center space-x-2
+                        flex-none whitespace-nowrap py-3 px-2 md:py-4 md:px-1 border-b-2 font-medium text-sm flex items-center space-x-2
                         ${activeTab === tab.id
                           ? 'border-primary-500 text-primary-600'
                           : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}
@@ -197,8 +236,10 @@ export default function ProfessionalDetails() {
               </div>
 
               {/* Tab Content */}
-              <div className="bg-white shadow rounded-lg p-6">
-                {professional ? (
+              <div className="bg-white shadow rounded-lg p-4 sm:p-6">
+                {(id && !professional) ? (
+                  null
+                ) : (
                   <>
                     {activeTab === 'datos' && (
                       <ProfessionalForm
@@ -209,25 +250,25 @@ export default function ProfessionalDetails() {
                       />
                     )}
 
-                    {activeTab === 'servicios' && (
+                    {id && activeTab === 'servicios' && (
                       <ProfessionalServicesForm
-                        professional={professional}
+                        professional={professional as Professional}
                       />
                     )}
 
-                    {activeTab === 'horarios' && (
+                    {id && activeTab === 'horarios' && (
                       <ProfessionalSchedule
-                        professional={professional}
+                        professional={professional as Professional}
                       />
                     )}
 
-                    {activeTab === 'bloqueos' && (
+                    {id && activeTab === 'bloqueos' && (
                       <ProfessionalBlocks
-                        professional={professional}
+                        professional={professional as Professional}
                       />
                     )}
                   </>
-                ) : null}
+                )}
               </div>
             </div>
           </div>
@@ -236,7 +277,7 @@ export default function ProfessionalDetails() {
           {professional && (
             <div className="space-y-6">
               {/* Información Básica */}
-              <div className="bg-white shadow rounded-lg p-6">
+              <div className="bg-white shadow rounded-lg p-4 sm:p-6">
                 <h3 className="text-lg font-medium text-gray-900 mb-4">Información del Profesional</h3>
                 <div className="space-y-4">
                   <div>

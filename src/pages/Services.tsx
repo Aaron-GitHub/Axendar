@@ -6,9 +6,10 @@ import LoadingSpinner from '../components/ui/LoadingSpinner'
 import Button from '../components/ui/Button'
 import Modal from '../components/ui/Modal'
 import ServiceForm from '../components/services/ServiceForm'
-import { IconDownload, IconPlus, IconService, IconEdit, IconTrash, IconSearch } from '../components/ui/Icons'
+import { IconDownload, IconPlus, IconService, IconEdit, IconSearch } from '../components/ui/Icons'
 import { DataTable } from '../components/ui/DataTable'
 import { ColumnDef } from '@tanstack/react-table'
+import { useIsLg } from '../hooks/useBreakpoint'
 import toast from 'react-hot-toast'
 import ConfirmationModal from '../components/ui/ConfirmationModal'
 
@@ -20,9 +21,10 @@ const Services = () => {
   const [editingService, setEditingService] = useState<Service | null>(null)
   const [serviceToDelete, setServiceToDelete] = useState<string | null>(null)
 
-  // Definición de columnas para la tabla
-  const columns = useMemo<ColumnDef<Service>[]>(
-    () => [
+  const isLg = useIsLg()
+  // Definición de columnas para la tabla (responsive)
+  const columns = useMemo<ColumnDef<Service>[]>(() => {
+    const baseCols: ColumnDef<Service>[] = [
       {
         accessorKey: 'name',
         header: 'Servicio',
@@ -42,56 +44,68 @@ const Services = () => {
           </div>
         ),
       },
+    ]
+
+    const desktopOnly: ColumnDef<Service>[] = [
       {
         accessorKey: 'duration',
         header: 'Duración',
         cell: ({ row }) => (
-          <div className="text-sm text-gray-900">
-            {row.original.duration || 'Sin duración'}
-          </div>
+          <div className="text-sm text-gray-900">{row.original.duration || 'Sin duración'}</div>
         ),
       },
       {
         accessorKey: 'price',
         header: 'Precio',
         cell: ({ row }) => (
-          <div className="text-sm text-gray-900">
-            ${row.original.price?.toLocaleString('es-CL') || 'Sin precio'}
-          </div>
+          <div className="text-sm text-gray-900">${row.original.price?.toLocaleString('es-CL') || 'Sin precio'}</div>
         ),
       },
       {
         accessorKey: 'created_at',
         header: 'Fecha de registro',
         cell: ({ row }) => (
-          <div className="text-sm text-gray-500">
-            {formatDate(row.original.created_at)}
-          </div>
+          <div className="text-sm text-gray-500">{formatDate(row.original.created_at)}</div>
         ),
       },
-      {
-        id: 'actions',
-        header: '',
-        cell: ({ row }) => (
-          <div className="flex items-center justify-end space-x-2">
-            <button
-              onClick={() => handleEditService(row.original)}
-              className="text-primary-600 hover:text-primary-900"
-            >
-              <IconEdit className="h-5 w-5" />
-            </button>
-            <button
-              onClick={() => handleDeleteService(row.original.id)}
-              className="text-red-600 hover:text-red-900"
-            >
-              <IconTrash className="h-5 w-5" />
-            </button>
+    ]
+
+    const actionsCol: ColumnDef<Service> = {
+      id: 'actions',
+      header: '',
+      cell: ({ row }) => (
+        <div className="px-2 py-1">
+          <div className={`flex items-center ${isLg ? 'justify-end space-x-2' : 'justify-end space-x-3'}`}>
+            {isLg ? (
+              <>
+                <button
+                  onClick={() => handleEditService(row.original)}
+                  className="text-primary-600 hover:text-primary-900"
+                  aria-label="Editar servicio"
+                  title="Editar servicio"
+                >
+                  <IconEdit className="h-5 w-5" />
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => handleEditService(row.original)}
+                  className="h-10 w-10 inline-flex items-center justify-center rounded-full border border-gray-300 bg-white text-primary-700 hover:bg-gray-50 active:bg-gray-100"
+                  aria-label="Editar servicio"
+                  title="Editar servicio"
+                >
+                  <IconEdit className="h-5 w-5" />
+                </button>
+              </>
+            )}
           </div>
-        ),
-      },
-    ],
-    []
-  )
+        </div>
+      ),
+    }
+
+    return isLg ? [...baseCols, ...desktopOnly, actionsCol] : [...baseCols, actionsCol]
+  }, [isLg])
 
   // Ref para controlar la carga inicial
   const initialLoadRef = useRef(false)
@@ -171,10 +185,10 @@ const Services = () => {
     setIsFormModalOpen(true)
   }
 
-  const handleDeleteService = (serviceId: string) => {
+  /*const handleDeleteService = (serviceId: string) => {
     setServiceToDelete(serviceId)
     setShowDeleteConfirmation(true)
-  }
+  }*/
 
   const confirmDeleteService = async () => {
     if (!serviceToDelete) return
@@ -258,70 +272,70 @@ const Services = () => {
     <div className="space-y-6">
      
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center">
-            <div className="bg-green-100 p-3 rounded-lg">
-              <IconService className="h-5 w-5 text-green-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Activos</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {services.filter((s) => s.active).length}
-              </p>
+      {/* Header compacto */}
+      <div className="mb-2 bg-white p-2 rounded-lg shadow-sm border border-gray-200">
+        <div className="flex items-center justify-between gap-2">
+          {/* Chips KPI */}
+          <div className="-mx-1 flex-1 overflow-x-auto md:overflow-visible">
+            <div className="px-1 inline-flex gap-2 min-w-max md:min-w-0 md:flex md:flex-wrap">
+              <div className="flex items-center gap-2 rounded-md border border-gray-200 bg-white px-2 py-1 shadow-sm">
+                <span className="inline-flex h-6 w-6 items-center justify-center rounded bg-green-100">
+                  <IconService className="h-3.5 w-3.5 text-green-600" />
+                </span>
+                <div className="leading-tight">
+                  <p className="text-[10px] uppercase tracking-wide text-gray-500">Activos</p>
+                  <p className="text-sm font-semibold text-gray-900">{services.filter(s => s.active).length}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 rounded-md border border-gray-200 bg-white px-2 py-1 shadow-sm">
+                <span className="inline-flex h-6 w-6 items-center justify-center rounded bg-blue-100">
+                  <IconService className="h-3.5 w-3.5 text-blue-600" />
+                </span>
+                <div className="leading-tight">
+                  <p className="text-[10px] uppercase tracking-wide text-gray-500">Nuevos</p>
+                  <p className="text-sm font-semibold text-gray-900">{services.filter(s => {
+                    const d = new Date(s.created_at)
+                    const now = new Date()
+                    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
+                  }).length}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 rounded-md border border-gray-200 bg-white px-2 py-1 shadow-sm">
+                <span className="inline-flex h-6 w-6 items-center justify-center rounded bg-blue-100">
+                  <IconSearch className="h-3.5 w-3.5 text-blue-600" />
+                </span>
+                <div className="leading-tight">
+                  <p className="text-[10px] uppercase tracking-wide text-gray-500">Disponibles</p>
+                  <p className="text-sm font-semibold text-gray-900">{services.filter(p => p.active).length}</p>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center">
-            <div className="bg-blue-100 p-3 rounded-lg">
-              <IconService className="h-5 w-5 text-blue-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Nuevos este mes</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {services.filter((s) => new Date(s.created_at).getMonth() === new Date().getMonth()).length}
-              </p>
-            </div>
+          {/* Acciones */}
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              onClick={handleExportToCSV}
+              variant="outline"
+              className="text-xs md:text-sm gap-1 h-8 px-2"
+              disabled={services.length === 0}
+            >
+              <IconDownload className="h-4 w-4" />
+              Exportar CSV
+            </Button>
+            <Button
+              onClick={handleNewService}
+              variant="primary"
+              className="text-xs md:text-sm gap-1 h-8 px-2"
+            >
+              <IconPlus className="h-4 w-4" />
+              Nuevo Servicio
+            </Button>
           </div>
         </div>
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center">
-            <div className="bg-blue-100 p-3 rounded-lg">
-              <IconSearch className="h-5 w-5 text-blue-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Disponibles</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {services.filter(p => p.active).length}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none flex justify-end space-x-2">
-        <Button
-          onClick={handleExportToCSV}
-          variant="outline"
-          className="w-full sm:w-auto"
-          disabled={services.length === 0}
-        >
-          <IconDownload className="h-4 w-4 mr-2" />
-          Exportar CSV
-        </Button>
-        <Button
-          onClick={handleNewService}
-          variant="primary"
-          className="w-full sm:w-auto"
-        >
-          <IconPlus className="h-4 w-4 mr-2" />
-          Nuevo Servicio
-        </Button>
       </div>
 
       {/* Services Table */}
-      <div className="p-6">
+      <div className="">
         {services.length === 0 ? (
           <div className="text-center py-12">
             <IconService className="mx-auto h-12 w-12 text-gray-400" />

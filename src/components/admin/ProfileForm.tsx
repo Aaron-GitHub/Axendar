@@ -191,20 +191,20 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ profile, onSave }) => {
           {profile && (
             <div className={`mb-6 flex items-center justify-between rounded-lg p-4 border ${
               profile.subscription_plan === 'enterprise' ? 'bg-purple-50 border-purple-200' :
-              profile.subscription_plan === 'premium' ? 'bg-blue-50 border-blue-200' :
+              profile.subscription_plan === 'premium' ? 'bg-blue-50 border-yellow-200' :
               profile.subscription_plan === 'basic' ? 'bg-green-50 border-green-200' :
               'bg-gray-50 border-gray-200'
             }`}>
               <div>
                 <h3 className={`text-sm font-medium ${
                   profile.subscription_plan === 'enterprise' ? 'text-purple-900' :
-                  profile.subscription_plan === 'premium' ? 'text-blue-900' :
+                  profile.subscription_plan === 'premium' ? 'text-yellow-900' :
                   profile.subscription_plan === 'basic' ? 'text-green-900' :
                   'text-gray-900'
                 }`}>Plan Actual</h3>
                 <p className={`mt-1 text-sm ${
                   profile.subscription_plan === 'enterprise' ? 'text-purple-700' :
-                  profile.subscription_plan === 'premium' ? 'text-blue-700' :
+                  profile.subscription_plan === 'premium' ? 'text-yellow-700' :
                   profile.subscription_plan === 'basic' ? 'text-green-700' :
                   'text-gray-500'
                 }`}>
@@ -219,17 +219,17 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ profile, onSave }) => {
                 <div className="text-right">
                   <h3 className={`text-sm font-medium ${
                   profile.subscription_plan === 'enterprise' ? 'text-purple-900' :
-                  profile.subscription_plan === 'premium' ? 'text-blue-900' :
+                  profile.subscription_plan === 'premium' ? 'text-yellow-900' :
                   profile.subscription_plan === 'basic' ? 'text-green-900' :
                   'text-gray-900'
                 }`}>Válido hasta</h3>
                   <p className={`mt-1 text-sm ${
                     profile.subscription_plan === 'enterprise' ? 'text-purple-700' :
-                    profile.subscription_plan === 'premium' ? 'text-blue-700' :
+                    profile.subscription_plan === 'premium' ? 'text-yellow-700' :
                     profile.subscription_plan === 'basic' ? 'text-green-700' :
                     'text-gray-500'
                   }`}>
-                    {new Date(profile.subscription_end).toLocaleDateString()}
+                    {new Date(profile.subscription_end).toLocaleDateString('es-ES')}
                   </p>
                 </div>
               )}
