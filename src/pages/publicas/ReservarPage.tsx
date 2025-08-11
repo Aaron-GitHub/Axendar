@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import BookingStepper from '../../components/booking/BookingStepper'
 import type { BookingData } from '../../components/booking/BookingStepper'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabaseAdmin } from '../../lib/supabase'
 import LoadingSpinner from '../../components/ui/LoadingSpinner'
 import type { User } from '../../types/index'
+import { hexToRgba } from '../../utils/color'
 
 const ReservarPage: React.FC = () => {
   const navigate = useNavigate()
@@ -18,6 +19,7 @@ const ReservarPage: React.FC = () => {
     date?: Date
     time?: string
   }>({})
+  const [branding, setBranding] = useState<{ booking_primary_color?: string; booking_accent_color?: string } | null>(null)
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -48,6 +50,34 @@ const ReservarPage: React.FC = () => {
 
     fetchUserData()
   }, [userId])
+
+  useEffect(() => {
+    const fetchBranding = async () => {
+      if (!userId) return
+      try {
+        const { data, error } = await supabaseAdmin
+          .from('profile_settings')
+          .select('booking_primary_color, booking_accent_color')
+          .eq('user_id', userId)
+          .maybeSingle()
+        if (error) throw error
+        setBranding(data || null)
+      } catch (e) {
+        console.error('Error fetching branding settings:', e)
+        setBranding(null)
+      }
+    }
+    fetchBranding()
+  }, [userId])
+
+  const brandingStyle = useMemo(() => {
+    const primary = branding?.booking_primary_color || '#338B85'
+    const accent = branding?.booking_accent_color || '#14b8a6'
+    return {
+      ['--booking-primary' as any]: primary,
+      ['--booking-accent' as any]: accent
+    } as React.CSSProperties
+  }, [branding])
 
   const handleComplete = (_bookingData: BookingData) => {
     // No hacer nada aquí, el BookingStepper ya maneja la visualización del éxito
@@ -88,7 +118,7 @@ const ReservarPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50" style={brandingStyle}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Columna de información de la empresa */}
@@ -101,8 +131,10 @@ const ReservarPage: React.FC = () => {
                   className="max-w-64 max-h-64 object-contain mb-4"
                 />
               ) : (
-                <div className="w-32 h-32 bg-primary-100 rounded-full flex items-center justify-center mb-4">
-                  <span className="text-4xl font-bold text-primary-600">
+                <div className="w-32 h-32 rounded-full flex items-center justify-center mb-4"
+                  style={{ backgroundColor: hexToRgba(branding?.booking_primary_color || '#338B85', 0.25) }}>
+                  <span className="text-4xl font-bold"
+                    style={{ color: branding?.booking_primary_color || '#338B85' }}>
                     {userData.company_name?.[0]?.toUpperCase() || 'E'}
                   </span>
                 </div>
@@ -194,6 +226,7 @@ const ReservarPage: React.FC = () => {
               onComplete={handleComplete}
               onCancel={handleCancel}
               onDetailsChange={setBookingDetails}
+              profile_color={branding?.booking_primary_color || '#338B85'}
             />
           </div>
         </div>
@@ -203,7 +236,7 @@ const ReservarPage: React.FC = () => {
               <div>
                 <p className="text-sm uppercase tracking-wide text-primary-600 font-semibold">Impulsado por Axendar</p>
                 <h3 className="mt-1 text-base sm:text-lg font-semibold text-gray-900">¿Te gustaría tener una página como esta para tus reservas?</h3>
-                <p className="mt-1 text-sm text-gray-500">Crea tu agenda online gratis y comienza a recibir reservas en minutos.</p>
+                <p className="mt-1 text-sm text-gray-500">Crea tu agenda online gratis y comienza a recibir reservas online.</p>
               </div>
               <div className="flex items-center gap-3 sm:gap-4">
                 <a
