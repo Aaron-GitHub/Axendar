@@ -110,7 +110,7 @@ async function prerender() {
     
     try {
       // Esperar a que el contenedor principal esté presente
-      await page.waitForSelector('#root', { timeout: 5000 });
+      await page.waitForSelector('#root', { timeout: 50000 });
       
       // Esperar a que desaparezca el estado de carga
       await page.waitForFunction(
@@ -121,7 +121,7 @@ async function prerender() {
           console.log('Estado de carga:', { hasContent, isLoading });
           return hasContent && !isLoading;
         },
-        { timeout: 5000, polling: 100 }
+        { timeout: 50000, polling: 100 }
       );
     } catch (error) {
       console.warn(`Tiempo de espera excedido para ruta ${route}, continuando con el contenido actual...`);

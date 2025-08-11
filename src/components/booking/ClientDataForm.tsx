@@ -11,6 +11,7 @@ interface ClientDataFormProps {
   selectedDate: Date
   selectedTime: string
   onSubmit: (data: ClientFormData) => void
+  profile_color: string
 }
 
 export interface ClientFormData {
@@ -32,7 +33,8 @@ const ClientDataForm: React.FC<ClientDataFormProps> = ({
   selectedProfessional,
   selectedDate,
   selectedTime,
-  onSubmit
+  onSubmit,
+  profile_color
 }) => {
   const {
     register,
@@ -68,7 +70,8 @@ const ClientDataForm: React.FC<ClientDataFormProps> = ({
             type="text"
             id="name"
             {...register('name')}
-            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-primary-500 focus:border-primary-500 ${errors.name ? 'border-red-300' : 'border-gray-300'}`}
+            className={`w-full px-3 py-2 border rounded-lg focus:outline-none ${errors.name ? 'border-red-300' : 'border-gray-300'}`}
+            style={{ boxShadow: `0 0 0 0px transparent`, outlineColor: profile_color }}
             placeholder="Tu nombre completo"
           />
           {errors.name && (
@@ -84,7 +87,8 @@ const ClientDataForm: React.FC<ClientDataFormProps> = ({
             type="email"
             id="email"
             {...register('email')}
-            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-primary-500 focus:border-primary-500 ${errors.email ? 'border-red-300' : 'border-gray-300'}`}
+            className={`w-full px-3 py-2 border rounded-lg focus:outline-none ${errors.email ? 'border-red-300' : 'border-gray-300'}`}
+            style={{ boxShadow: `0 0 0 0px transparent`, outlineColor: profile_color }}
             placeholder="tu.email@ejemplo.com"
           />
           {errors.email && (
@@ -100,7 +104,8 @@ const ClientDataForm: React.FC<ClientDataFormProps> = ({
             type="tel"
             id="phone"
             {...register('phone')}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none"
+            style={{ outlineColor: profile_color }}
             placeholder="+56 9 1234 5678"
           />
         </div>
@@ -113,7 +118,8 @@ const ClientDataForm: React.FC<ClientDataFormProps> = ({
             id="notes"
             {...register('notes')}
             rows={3}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none"
+            style={{ outlineColor: profile_color }}
             placeholder="Cualquier información adicional que necesitemos saber"
           />
         </div>
@@ -121,6 +127,7 @@ const ClientDataForm: React.FC<ClientDataFormProps> = ({
         <div className="flex justify-end space-x-3 pt-6">
           <Button
             type="submit"
+            style={{ backgroundColor: profile_color, borderColor: profile_color }}
           >
             Continuar con la Reserva
           </Button>

@@ -21,6 +21,7 @@ interface BookingStepperProps {
     date?: Date
     time?: string
   }) => void
+  profile_color: string
 }
 
 export interface BookingData {
@@ -45,7 +46,7 @@ const STEPS = [
   { id: 'success', title: 'Éxito' }
 ]
 
-const BookingStepper: React.FC<BookingStepperProps> = ({ userId, onComplete, onDetailsChange }) => {
+const BookingStepper: React.FC<BookingStepperProps> = ({ userId, onComplete, onDetailsChange, profile_color }) => {
   const [currentStep, setCurrentStep] = useState(0)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
@@ -119,6 +120,8 @@ const BookingStepper: React.FC<BookingStepperProps> = ({ userId, onComplete, onD
     }
   }
 
+  const primaryVar = 'var(--booking-primary)'
+
   return (
     <>
       <div className="max-w-4xl mx-auto px-2 sm:px-6 lg:px-8">
@@ -130,13 +133,20 @@ const BookingStepper: React.FC<BookingStepperProps> = ({ userId, onComplete, onD
               {/* Step Circle */}
               <div className="flex flex-col items-center flex-shrink-0">
                 <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium
-                    ${index < currentStep
-                      ? 'bg-primary-600 text-white'
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                    index < currentStep
+                      ? 'text-white'
                       : index === currentStep
-                        ? 'bg-primary-100 text-primary-600 border-2 border-primary-600'
+                        ? 'border-2'
                         : 'bg-gray-100 text-gray-500'
-                    }`}
+                  }`}
+                  style={
+                    index < currentStep
+                      ? { backgroundColor: primaryVar }
+                      : index === currentStep
+                        ? { borderColor: primaryVar, color: primaryVar, backgroundColor: 'white' }
+                        : undefined
+                  }
                 >
                   {index + 1}
                 </div>
@@ -147,7 +157,8 @@ const BookingStepper: React.FC<BookingStepperProps> = ({ userId, onComplete, onD
               {/* Connector Line */}
               {index < STEPS.length - 1 && (
                 <div
-                  className={`flex-1 h-0.5 mx-3 ${index < currentStep ? 'bg-primary-600' : 'bg-gray-200'}`}
+                  className={`flex-1 h-0.5 mx-3 ${index < currentStep ? '' : 'bg-gray-200'}`}
+                  style={index < currentStep ? { backgroundColor: primaryVar } : undefined}
                 />
               )}
             </React.Fragment>
@@ -166,6 +177,7 @@ const BookingStepper: React.FC<BookingStepperProps> = ({ userId, onComplete, onD
                 handleNext()
               }}
               userId={userId}
+              profile_color={profile_color}
             />
           )}
           {currentStep === 1 && bookingData.service && (
@@ -177,6 +189,7 @@ const BookingStepper: React.FC<BookingStepperProps> = ({ userId, onComplete, onD
                 handleNext()
               }}
               userId={userId}
+              profile_color={profile_color}
             />
           )}
           {currentStep === 2 && bookingData.service && bookingData.professional && (
@@ -193,6 +206,7 @@ const BookingStepper: React.FC<BookingStepperProps> = ({ userId, onComplete, onD
                 handleDateTimeSelect()
               }}
               userId={userId}
+              profile_color={profile_color}
             />
           )}
           {currentStep === 3 && bookingData.service && bookingData.professional && bookingData.date && bookingData.time && (
@@ -201,6 +215,7 @@ const BookingStepper: React.FC<BookingStepperProps> = ({ userId, onComplete, onD
               selectedProfessional={bookingData.professional}
               selectedDate={bookingData.date}
               selectedTime={bookingData.time}
+              profile_color={profile_color}
               onSubmit={(data: ClientFormData) => {
                 const { name, email, phone, notes } = data
                 updateBookingData({ 
@@ -222,6 +237,7 @@ const BookingStepper: React.FC<BookingStepperProps> = ({ userId, onComplete, onD
               date={bookingData.date!}
               time={bookingData.time!}
               clientData={bookingData.clientData!}
+              profile_color={profile_color}
               onConfirm={async () => {
                 // Ya validamos que todos los datos existen en la condición del render
                 try {
@@ -257,6 +273,7 @@ const BookingStepper: React.FC<BookingStepperProps> = ({ userId, onComplete, onD
           {currentStep === 5 && (
             <BookingSuccess
               onNewBooking={resetForm}
+              profile_color={profile_color}
             />
           )}
         </div>
@@ -276,7 +293,8 @@ const BookingStepper: React.FC<BookingStepperProps> = ({ userId, onComplete, onD
             <button
               onClick={handleNext}
               disabled={isSubmitting}
-              className="ml-auto px-3 sm:px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center whitespace-nowrap"
+              className="ml-auto px-3 sm:px-4 py-2 text-sm font-medium text-white rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center whitespace-nowrap"
+              style={{ backgroundColor: primaryVar }}
             >
               {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               {currentStep === STEPS.length - 1 ? 'Confirmar Reserva' : 'Siguiente'}

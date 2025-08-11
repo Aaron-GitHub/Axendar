@@ -377,7 +377,7 @@ const Landing: React.FC = () => {
                     </div>
                     
                     <div className="bg-gradient-to-br from-gray-50 to-primary-50 rounded-xl p-6 border border-primary-100">
-                      <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center justify-between mb-4 flex-col md:flex-row">
                         <h4 className="text-sm font-medium text-gray-600">Tendencia Semanal</h4>
                         <div className="flex items-center space-x-2 text-xs text-primary-600">
                           <div className="w-2 h-2 bg-[#FCD34D] rounded-full"></div>

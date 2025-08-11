@@ -1,6 +1,7 @@
 import React from 'react'
 import { Service, Professional } from '../../types'
 import { Clock, DollarSign, Calendar, User, Mail, Phone, MessageSquare } from 'lucide-react'
+import { hexToRgba } from '../../utils/color'
 
 interface BookingSummaryProps {
   service: Service
@@ -15,6 +16,7 @@ interface BookingSummaryProps {
   }
   onConfirm: () => Promise<void>
   isSubmitting: boolean
+  profile_color: string
 }
 
 const BookingSummary: React.FC<BookingSummaryProps> = ({
@@ -24,7 +26,8 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
   time,
   clientData,
   onConfirm,
-  isSubmitting
+  isSubmitting,
+  profile_color
 }) => {
   return (
     <div className="space-y-6">
@@ -105,8 +108,8 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
                 className="w-12 h-12 rounded-full"
               />
             ) : (
-              <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center">
-                <span className="text-primary-600 font-medium text-lg">
+              <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: hexToRgba(profile_color, 0.15), color: profile_color }}>
+                <span className="font-medium text-lg" style={{ color: profile_color }}>
                   {professional.name.charAt(0)}
                 </span>
               </div>
@@ -118,7 +121,8 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
                     {professional.specialties.map((specialty, index) => (
                       <span
                         key={index}
-                        className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800"
+                        className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                        style={{ backgroundColor: hexToRgba(profile_color, 0.15), color: profile_color }}
                       >
                         {specialty}
                       </span>
@@ -170,8 +174,8 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
       </div>
 
       <div className="space-y-4">
-        <div className="bg-primary-50 border border-primary-200 rounded-lg p-3 sm:p-4">
-          <p className="text-xs sm:text-sm text-primary-800">
+        <div className="rounded-lg p-3 sm:p-4" style={{ backgroundColor: hexToRgba(profile_color, 0.1), border: `1px solid ${profile_color}` }}>
+          <p className="text-xs sm:text-sm" style={{ color: profile_color }}>
             Al confirmar la reserva, recibirás un email con los detalles y las instrucciones para el día de tu cita.
           </p>
         </div>
@@ -179,7 +183,8 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
         <button
           onClick={onConfirm}
           disabled={isSubmitting}
-          className="w-full px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+          className="w-full px-4 py-2 text-sm font-medium text-white rounded-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+          style={{ backgroundColor: profile_color, borderColor: profile_color }}
         >
           {isSubmitting ? (
             <>
