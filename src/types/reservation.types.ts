@@ -10,9 +10,22 @@ export interface Reservation {
   notes?: string | null
   total_amount: number
   user_id: string
+  date: Date | string
+  clients: Client
+  services: Service
+  professionals: Professional
   client_name: string
   client_email: string
-  date: Date | string
+}
+
+
+export interface Client {
+  id: string
+  name: string
+  email: string
+  phone?: string
+  created_at: Date | string
+  updated_at: Date | string
 }
 
 export interface Professional {

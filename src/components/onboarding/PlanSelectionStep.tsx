@@ -1,7 +1,7 @@
 import { Star, CheckCircle, Sparkles } from "lucide-react";
 import { UseFormReturn } from "react-hook-form";
 import Button from "../ui/Button";
-import { defaultPlans, PricingPlan } from "../PricingSection";
+import { defaultPlans, PricingPlan } from "../../constants/plans";
 
 interface PlanSelectionStepProps {
   form: UseFormReturn<{ selectedPlan: string }>;
@@ -50,8 +50,10 @@ export function PlanSelectionStep({
                   : "border-gray-300"
               }`}
               onClick={() => {
-                form.setValue("selectedPlan", plan.planId);
+                form.setValue("selectedPlan", plan.planId, { shouldValidate: true });
                 setSelectedPlan(plan.planId);
+                // Avanzar automáticamente al siguiente paso
+                onNext();
               }}
             >
               {plan.isPopular && (
@@ -73,7 +75,7 @@ export function PlanSelectionStep({
               </div>
               <ul className="mt-4 space-y-2 text-sm text-gray-600">
                 {plan.features.map((feature: { text: string }, index: number) => (
-                  <li key={index} className="flex items-center">
+                  <li key={`${plan.planId}-feature-${index}`} className="flex items-center">
                     <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
                     {feature.text}
                   </li>

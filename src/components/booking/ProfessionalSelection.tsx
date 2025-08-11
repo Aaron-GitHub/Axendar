@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Professional, Service } from '../../types'
-import { supabase } from '../../lib/supabase'
+import { supabaseAdmin } from '../../lib/supabase'
 import { Mail, Phone } from 'lucide-react'
 
 interface ProfessionalSelectionProps {
@@ -23,10 +23,11 @@ const ProfessionalSelection: React.FC<ProfessionalSelectionProps> = ({
     const fetchProfessionals = async () => {
       try {
         // Obtener profesionales públicos asociados al servicio y al usuario
-        const { data, error } = await supabase
+        const { data, error } = await supabaseAdmin
           .from('professionals')
           .select('*, professional_services!inner(*)')
           .eq('user_id', userId)
+          .eq('available', true)
           .eq('professional_services.service_id', selectedService.id)
           .order('name')
 

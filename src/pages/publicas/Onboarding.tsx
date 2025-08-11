@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
-import ConfirmationModal from '../components/ui/ConfirmationModal'
+import ConfirmationModal from '../../components/ui/ConfirmationModal'
 import { yupResolver } from '@hookform/resolvers/yup'
 import * as yup from 'yup'
-import { supabase } from '../lib/supabase'
-import { useOnboardingAuth } from '../contexts/OnboardingAuthContext'
-import Button from '../components/ui/Button'
-import logo from '../assets/img/logo.png'
-import icono from '../assets/img/icono.png'
+import { supabase, supabaseAdmin } from '../../lib/supabase'
+import { useOnboardingAuth } from '../../contexts/OnboardingAuthContext'
+import Button from '../../components/ui/Button'
+import logo from '../../assets/img/logo.png'
+import icono from '../../assets/img/icono.png'
 import { 
   Building2, 
   Calendar, 
@@ -27,7 +27,7 @@ import {
   Sparkles
 } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { PlanSelectionStep } from "../components/onboarding/PlanSelectionStep";
+import { PlanSelectionStep } from "../../components/onboarding/PlanSelectionStep";
 
 const steps = [
   {
@@ -117,7 +117,8 @@ const Onboarding: React.FC = () => {
   const [emailInUse, setEmailInUse] = useState('')
   const [selectedPlan, setSelectedPlan] = useState(() => {
     const planFromUrl = searchParams.get('plan')
-    return planFromUrl === 'basic' || planFromUrl === 'pro' ? planFromUrl : ''
+    if (planFromUrl === 'pro') return 'premium' // compatibilidad legacy
+    return planFromUrl === 'basic' || planFromUrl === 'premium' ? planFromUrl : ''
   })
 
   useEffect(() => {
@@ -305,14 +306,17 @@ const Onboarding: React.FC = () => {
       if (signUpError) throw signUpError
       if (!signUpData.user) throw new Error('No se pudo crear el usuario')
 
-      // 2. Crear/actualizar perfil con toda la información
-      const { error: profileError } = await supabase
+      // 2. Crear/actualizar perfil con toda la información usando el cliente admin
+      const { error: profileError } = await supabaseAdmin
         .from('profiles')
-        .upsert({
+        .insert({
           id: signUpData.user.id,
           email: profileData.email,
           name: profileData.name,
           company_name: profileData.companyName,
+          subscription_plan: selectedPlan,
+          subscription_start: new Date().toISOString(),
+          subscription_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
         })
 
       if (profileError) throw profileError
@@ -329,7 +333,7 @@ const Onboarding: React.FC = () => {
       console.log('Professional data from storage:', professionalData)
       console.log('Professional payload:', professionalPayload)
 
-      const { data: professional, error: professionalError } = await supabase
+      const { data: professional, error: professionalError } = await supabaseAdmin
         .from('professionals')
         .insert(professionalPayload)
         .select()
@@ -345,7 +349,7 @@ const Onboarding: React.FC = () => {
       }
 
       // 3. Guardar el servicio y asociarlo al profesional
-      const { data: service, error: serviceError } = await supabase
+      const { data: service, error: serviceError } = await supabaseAdmin
         .from('services')
         .insert({
           name: serviceData.service_name,
@@ -368,7 +372,7 @@ const Onboarding: React.FC = () => {
       }
 
       //4 . Guardar la relacion entre el profesional y el servicio
-      const { error: professional_serviceError } = await supabase
+      const { error: professional_serviceError } = await supabaseAdmin
         .from('professional_services')
         .insert({
           service_id: service.id,
@@ -971,7 +975,7 @@ const Onboarding: React.FC = () => {
       case 1: return renderWelcomeStep()
       case 2: 
         // Si hay un plan preseleccionado, saltar este paso
-        if (selectedPlan && (selectedPlan === 'basic' || selectedPlan === 'pro')) {
+        if (selectedPlan && (selectedPlan === 'basic' || selectedPlan === 'premium')) {
           nextStep(); // Avanzar automáticamente si hay plan preseleccionado
           return null;
         }
@@ -990,7 +994,9 @@ const Onboarding: React.FC = () => {
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">
-            <img src={logo} alt="Logo" className="h-8 w-auto" />
+            <a href="/">
+              <img src={logo} alt="Logo" className="h-8 w-auto" />
+            </a>
           </div>
           <p className="text-gray-600">Configuración inicial - Solo tomará unos minutos</p>
         </div>
@@ -1002,7 +1008,6 @@ const Onboarding: React.FC = () => {
         <div className="bg-white rounded-xl shadow-lg p-8">
           {renderCurrentStep()}
         </div>
-
         <ConfirmationModal
           isOpen={showEmailExistsModal}
           onClose={() => setShowEmailExistsModal(false)}

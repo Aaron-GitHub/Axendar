@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useRef } from 'react'
 import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import timeGridPlugin from '@fullcalendar/timegrid'
@@ -15,9 +15,11 @@ import { getStatusColor } from '../../utils/statusUtils'
 interface CalendarViewProps {
   reservations: Reservation[]
   onEventClick: (reservation: Reservation) => void
+  currentDate?: string
 }
 
-const CalendarView: React.FC<CalendarViewProps> = ({ reservations, onEventClick }) => {
+const CalendarView: React.FC<CalendarViewProps> = ({ reservations, onEventClick, currentDate }) => {
+  const calendarRef = useRef<FullCalendar | null>(null)
   const events = reservations.map(reservation => ({
     id: reservation.id,
     title: `${reservation.clients?.name}`,
@@ -34,11 +36,20 @@ const CalendarView: React.FC<CalendarViewProps> = ({ reservations, onEventClick 
     ]
   }))
 
+  useEffect(() => {
+    if (currentDate && calendarRef.current) {
+      const api = calendarRef.current.getApi()
+      try { api.gotoDate(currentDate) } catch {}
+    }
+  }, [currentDate])
+
   return (
     <div className="bg-white rounded-lg shadow">
       <FullCalendar
+        ref={calendarRef}
         plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-        initialView="timeGridWeek"
+        initialView="timeGridDay"
+        initialDate={currentDate}
         headerToolbar={{
           left: 'prev,next today',
           center: 'title',
@@ -60,7 +71,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ reservations, onEventClick 
         }}
         locale="es"
         firstDay={1}
-        slotMinTime="06:00:00"
+        slotMinTime="08:00:00"
         slotMaxTime="22:00:00"
         allDaySlot={false}
         events={events}

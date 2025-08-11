@@ -1,9 +1,19 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { Professional, Service } from '../../types'
+import { ProfessionalSchedule } from '../../types/schedule'
 import { Calendar, Loader2 } from 'lucide-react'
 import moment from 'moment'
 import 'moment/locale/es'
 import { getAvailableTimeSlots } from '../../services/bookingService'
+import { supabaseAdmin } from '../../lib/supabase'
+
+// Forzar el locale a español globalmente
+moment.locale('es')
+
+// Forzar el locale a español
+if (moment.locale() !== 'es') {
+  moment.locale('es')
+}
 
 interface DateTimeSelectionProps {
   selectedService: Service
@@ -14,6 +24,41 @@ interface DateTimeSelectionProps {
   userId: string
 }
 
+const dayTranslations: { [key: string]: string } = {
+  'lu': 'Lun',
+  'ma': 'Mar',
+  'mi': 'Mié',
+  'ju': 'Jue',
+  'vi': 'Vie',
+  'sa': 'Sáb',
+  'do': 'Dom'
+}
+
+const monthTranslations: { [key: string]: string } = {
+  'january': 'Enero',
+  'february': 'Febrero',
+  'march': 'Marzo',
+  'april': 'Abril',
+  'may': 'Mayo',
+  'june': 'Junio',
+  'july': 'Julio',
+  'august': 'Agosto',
+  'september': 'Septiembre',
+  'october': 'Octubre',
+  'november': 'Noviembre',
+  'december': 'Diciembre'
+}
+
+const formatMonth = (date: moment.Moment) => {
+  const month = date.format('MMMM').toLowerCase()
+  return monthTranslations[month] || month.charAt(0).toUpperCase() + month.slice(1)
+}
+
+const getLocalizedWeekdays = () => {
+  const weekDays = ['lu', 'ma', 'mi', 'ju', 'vi', 'sa', 'do']
+  return weekDays.map(day => dayTranslations[day] || day.toUpperCase())
+}
+
 const DateTimeSelection: React.FC<DateTimeSelectionProps> = ({
   selectedService,
   selectedProfessional,
@@ -22,13 +67,22 @@ const DateTimeSelection: React.FC<DateTimeSelectionProps> = ({
   onSelect,
   userId,
 }) => {
-  const [currentMonth, setCurrentMonth] = useState(moment())
+  const [currentMonth, setCurrentMonth] = useState(moment().locale('es'))
   const [selectedDate, setSelectedDate] = useState<Date | null>(initialDate)
   const [selectedTime, setSelectedTime] = useState<string | null>(initialTime)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [availableSlots, setAvailableSlots] = useState<string[]>([])
-  
+
+  // Memorizar los días de la semana para evitar recálculos
+  const localizedWeekDays = useMemo(() => getLocalizedWeekdays(), [])
+
+  // Asegurar que el locale esté en español y actualizar el mes actual
+  useEffect(() => {
+    moment.locale('es')
+    setCurrentMonth(moment().locale('es'))
+  }, [])
+
   // Carga los horarios disponibles cuando se selecciona una fecha
   useEffect(() => {
     const loadAvailableSlots = async () => {
@@ -45,11 +99,12 @@ const DateTimeSelection: React.FC<DateTimeSelectionProps> = ({
           selectedProfessional.id,
           selectedDate,
           selectedService.id,
-          userId
+          selectedProfessional.user_id
         )
 
         if (!result.success) {
-          throw new Error(result.error)
+          console.error('Error fetching time slots:', result)
+          return
         }
 
         setAvailableSlots(result.data || [])
@@ -72,8 +127,8 @@ const DateTimeSelection: React.FC<DateTimeSelectionProps> = ({
     
     // Añadir días del mes anterior para completar la primera semana
     const firstDay = moment(startDate)
-    const daysFromPrevMonth = firstDay.day()
-    for (let i = daysFromPrevMonth - 1; i >= 0; i--) {
+    const daysFromPrevMonth = firstDay.day() === 0 ? 6 : firstDay.day() - 1
+    for (let i = daysFromPrevMonth; i > 0; i--) {
       days.push(moment(startDate).subtract(i + 1, 'days'))
     }
     
@@ -84,7 +139,7 @@ const DateTimeSelection: React.FC<DateTimeSelectionProps> = ({
     
     // Añadir días del mes siguiente para completar la última semana
     const lastDay = moment(endDate)
-    const daysFromNextMonth = 6 - lastDay.day()
+    const daysFromNextMonth = lastDay.day() === 0 ? 0 : 7 - lastDay.day()
     for (let i = 1; i <= daysFromNextMonth; i++) {
       days.push(moment(endDate).add(i, 'days'))
     }
@@ -92,11 +147,42 @@ const DateTimeSelection: React.FC<DateTimeSelectionProps> = ({
     return days
   }
 
+  // Verificar si el profesional tiene horario para un día específico
+  const [professionalSchedules, setProfessionalSchedules] = useState<ProfessionalSchedule[]>([])
+
+  // Cargar los horarios del profesional
+  useEffect(() => {
+    const loadProfessionalSchedules = async () => {
+      const { data: schedules, error } = await supabaseAdmin
+        .from('professional_schedules')
+        .select('*')
+        .eq('professional_id', selectedProfessional.id)
+        .eq('is_working', true)
+
+      if (!error && schedules) {
+        setProfessionalSchedules(schedules)
+      }
+    }
+
+    loadProfessionalSchedules()
+  }, [selectedProfessional.id])
+
   const isDateDisabled = (date: moment.Moment) => {
-    // Deshabilitar fechas pasadas y fines de semana
-    return date.isBefore(moment(), 'day') || 
-           date.day() === 0 || 
-           date.day() === 6
+    // Deshabilitar fechas pasadas
+    if (date.isBefore(moment(), 'day')) {
+      return true
+    }
+
+    // Obtener el día de la semana (0-6, donde 0 es domingo)
+    const dayOfWeek = date.day()
+
+    // Verificar si hay algún horario configurado para este día
+    const hasSchedule = professionalSchedules.some(
+      schedule => schedule.day_of_week === dayOfWeek
+    )
+
+    // Deshabilitar el día si no hay horario configurado
+    return !hasSchedule
   }
 
   const handleDateSelect = (date: moment.Moment) => {
@@ -115,11 +201,11 @@ const DateTimeSelection: React.FC<DateTimeSelectionProps> = ({
   }
 
   const handlePrevMonth = () => {
-    setCurrentMonth(prev => moment(prev).subtract(1, 'month'))
+    setCurrentMonth(prev => moment(prev).subtract(1, 'month').locale('es'))
   }
 
   const handleNextMonth = () => {
-    setCurrentMonth(prev => moment(prev).add(1, 'month'))
+    setCurrentMonth(prev => moment(prev).add(1, 'month').locale('es'))
   }
 
   return (
@@ -136,7 +222,7 @@ const DateTimeSelection: React.FC<DateTimeSelectionProps> = ({
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Calendario */}
-        <div className="space-y-4">
+        <div className="space-y-4 shadow-md rounded-lg p-2">
           <div className="flex items-center justify-between mb-4">
             <button
               onClick={handlePrevMonth}
@@ -145,7 +231,7 @@ const DateTimeSelection: React.FC<DateTimeSelectionProps> = ({
               &lt;
             </button>
             <h3 className="text-lg font-medium text-gray-900">
-              {currentMonth.format('MMMM YYYY')}
+              {`${formatMonth(currentMonth)} ${currentMonth.format('YYYY')}`}
             </h3>
             <button
               onClick={handleNextMonth}
@@ -157,7 +243,7 @@ const DateTimeSelection: React.FC<DateTimeSelectionProps> = ({
 
           <div className="grid grid-cols-7 gap-1">
             {/* Días de la semana */}
-            {moment.weekdaysMin(true).map(day => (
+            {localizedWeekDays.map(day => (
               <div
                 key={day}
                 className="text-center text-sm font-medium text-gray-600 py-2"
@@ -179,8 +265,8 @@ const DateTimeSelection: React.FC<DateTimeSelectionProps> = ({
                   disabled={isDisabled}
                   className={`
                     p-2 text-sm rounded-lg
-                    ${isDisabled ? 'text-gray-300 cursor-not-allowed' : 'hover:bg-primary-50'}
-                    ${!isCurrentMonth ? 'text-gray-400' : 'text-gray-700'}
+                    ${isDisabled ? 'text-gray-300 cursor-not-allowed bg-red-50' : 'hover:bg-primary-50'}
+                    ${!isCurrentMonth ? 'text-gray-300' : 'text-gray-900'}
                     ${isSelected ? 'bg-primary-100 text-primary-700 font-medium' : ''}
                   `}
                 >

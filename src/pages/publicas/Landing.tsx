@@ -1,9 +1,9 @@
 import React, { useState, useEffect, FormEvent } from 'react'
 import toast, { Toaster } from 'react-hot-toast'
 import { Link } from 'react-router-dom'
-import Button from '../components/ui/Button'
-import { PricingSection } from '../components/landing/PricingSection'
-import { sendEmail } from '../services/emailService'
+import Button from '../../components/ui/Button'
+import { PricingSection } from '../../components/landing/PricingSection'
+import { sendEmail } from '../../services/emailService'
 import { 
   ArrowRight, 
   Calendar, 
@@ -25,8 +25,8 @@ import {
   Timer,
   TrendingUp
 } from 'lucide-react'
-import logo from '../assets/img/logo.png'
-import logoblanco from '../assets/img/logo_white.png'
+import logo from '../../assets/img/logo.png'
+import logoblanco from '../../assets/img/logo_white.png'
 
 const Landing: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -380,10 +380,12 @@ const Landing: React.FC = () => {
                       <div className="flex items-center justify-between mb-4">
                         <h4 className="text-sm font-medium text-gray-600">Tendencia Semanal</h4>
                         <div className="flex items-center space-x-2 text-xs text-primary-600">
-                          <div className="w-2 h-2 bg-primary-500 rounded-full"></div>
-                          <span>Reservas</span>
+                          <div className="w-2 h-2 bg-[#FCD34D] rounded-full"></div>
+                          <span>Confirmadas</span>
                           <div className="w-2 h-2 bg-secondary-500 rounded-full ml-2"></div>
-                          <span>Ingresos</span>
+                          <span>Pendientes</span>
+                          <div className="w-2 h-2 bg-[#F87171] rounded-full ml-2"></div>
+                          <span>Canceladas</span>
                         </div>
                       </div>
                       <div className="space-y-2">
@@ -395,16 +397,22 @@ const Landing: React.FC = () => {
                           </div>
                           {[35, 45, 55, 40, 50, 30, 35].map((height, i) => (
                             <div key={i} className="w-full flex items-end space-x-0.5">
-                              <div className="w-1/2">
+                              <div className="w-1/3">
                                 <div 
-                                  className="w-full bg-gradient-to-t from-primary-500/70 to-primary-400/70 rounded-t transition-all duration-700 ease-out hover:from-primary-500/80 hover:to-primary-400/80"
+                                  className="w-full bg-gradient-to-t from-yellow-500/70 to-orange-500/40 rounded-t transition-all duration-700 ease-out hover:from-yellow-500/80 hover:to-orange-500/80"
                                   style={{ height: `${height * 2}px` }}
                                 ></div>
                               </div>
-                              <div className="w-1/2">
+                              <div className="w-1/3">
                                 <div 
-                                  className="w-full bg-gradient-to-t from-secondary-500/70 to-secondary-400/70 rounded-t transition-all duration-700 ease-out hover:from-secondary-500/80 hover:to-secondary-400/80"
+                                  className="w-full bg-gradient-to-t from-secondary-500/70 to-secondary-500/70 rounded-t transition-all duration-700 ease-out hover:from-secondary-500/80 hover:to-secondary-500/80"
                                   style={{ height: `${height * 1.8}px` }}
+                                ></div>
+                              </div> 
+                              <div className="w-1/3">
+                                <div 
+                                  className="w-full bg-gradient-to-t from-red-500/70 to-pink-500/70 rounded-t transition-all duration-700 ease-out hover:from-red-500/80 hover:to-pink-500/80"
+                                  style={{ height: `${height * 0.5}px` }}
                                 ></div>
                               </div>
                             </div>
@@ -691,12 +699,20 @@ const Landing: React.FC = () => {
                     {
                       title: 'Nuevo Mensaje de Contacto Web Axendar',
                       name: 'Administrador',
-                      message: `
-                          <b>Nombre:</b> ${formData.name} <br/>
-                          <b>Email:</b> ${formData.email} <br/>
-                          <b>Asunto:</b> ${formData.subject} <br/>
-                          <b>Mensaje:</b> ${formData.message}`,
-                      additionalInfo: 'Mensaje enviado desde el formulario de contacto de la landing page'
+                      message: 'Has recibido un nuevo mensaje desde el formulario de contacto.',
+                      actionUrl: `mailto:${formData.email}?subject=${encodeURIComponent('Re: ' + formData.subject)}`,
+                      actionText: 'Responder al contacto',
+                      sections: [
+                        {
+                          title: 'Detalles del contacto',
+                          content: `
+                            <div class="detail-row"><span class="detail-label">Nombre: </span><span class="detail-value">${formData.name}</span></div>
+                            <div class="detail-row"><span class="detail-label">Email: </span><span class="detail-value">${formData.email}</span></div>
+                            <div class="detail-row"><span class="detail-label">Asunto: </span><span class="detail-value">${formData.subject}</span></div>
+                            <div class="detail-row"><span class="detail-label">Mensaje: </span><span class="detail-value">${formData.message}</span></div>
+                          `
+                        }
+                      ]
                     }
                   )
                   toast.success('¡Gracias por contactarnos! Te responderemos pronto.')
@@ -860,17 +876,16 @@ const Landing: React.FC = () => {
               <h4 className="text-lg font-semibold mb-4">Recursos</h4>
               <ul className="space-y-2 text-gray-400">
                 <li><a href="#" className="hover:text-white transition-colors">Guía de Inicio</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Preguntas Frecuentes</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Tutorial</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Preguntas Frecuentes <span className='text-xs text-gray-600'>(pronto)</span></a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Tutorial <span className='text-xs text-gray-600'>(pronto)</span></a></li>
               </ul>
             </div>
 
             <div>
               <h4 className="text-lg font-semibold mb-4">Contacto</h4>
               <ul className="space-y-2 text-gray-400">
-                <li><a href="#contact" className="hover:text-white transition-colors">Soporte 24/7</a></li>
-                <li><a href="mailto:soporte@reservaspro.com" className="hover:text-white transition-colors">soporte@reservaspro.com</a></li>
-                <li><a href="tel:+1234567890" className="hover:text-white transition-colors">+1 (234) 567-890</a></li>
+                <li><a href="#contact" className="hover:text-white transition-colors">Soporte personalizado</a></li>
+                <li><a href="mailto:soporte@axendar.com" className="hover:text-white transition-colors">soporte@axendar.com</a></li>
               </ul>
             </div>
           </div>

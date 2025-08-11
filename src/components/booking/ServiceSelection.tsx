@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Service } from '../../types'
-import { supabase } from '../../lib/supabase'
+import { supabaseAdmin } from '../../lib/supabase'
 import { Clock, DollarSign } from 'lucide-react'
 
 interface ServiceSelectionProps {
@@ -21,10 +21,11 @@ const ServiceSelection: React.FC<ServiceSelectionProps> = ({
     const fetchServices = async () => {
       try {
         // Obtener servicios públicos del usuario
-        const { data, error } = await supabase
+        const { data, error } = await supabaseAdmin
           .from('services')
           .select('*')
           .eq('user_id', userId)
+          .eq('active', true)
           .order('name')
 
         if (error) throw error

@@ -1,6 +1,7 @@
-import { supabase } from '../lib/supabase'
+import { supabaseAdmin } from '../lib/supabase'
 import { sendBookingConfirmationEmail } from './bookingEmailService'
 import { Reservation } from '../types/reservation.types'
+import { ProfessionalBlock } from '../types/schedule'
 
 export interface CreateBookingData {
   service_id: string
@@ -17,7 +18,7 @@ export interface CreateBookingData {
 
 export const createBooking = async (data: CreateBookingData) => {
   // Validar que el servicio pertenezca al usuario correcto
-  const { data: service, error: serviceError } = await supabase
+  const { data: service, error: serviceError } = await supabaseAdmin
     .from('services')
     .select('id')
     .eq('id', data.service_id)
@@ -28,7 +29,7 @@ export const createBooking = async (data: CreateBookingData) => {
   if (!service) throw new Error('Service not found')
 
   // Validar que el profesional pertenezca al usuario y esté asignado al servicio
-  const { data: professional, error: professionalError } = await supabase
+  const { data: professional, error: professionalError } = await supabaseAdmin
     .from('professionals')
     .select('id, professional_services!inner(*)')
     .eq('id', data.professional_id)
@@ -40,7 +41,7 @@ export const createBooking = async (data: CreateBookingData) => {
   if (!professional) throw new Error('Professional not found or not assigned to service')
   try {
     // Buscar cliente por email globalmente
-    const { data: existingClient, error: clientSearchError } = await supabase
+    const { data: existingClient, error: clientSearchError } = await supabaseAdmin
       .from('clients')
       .select('id, name, email, phone')
       .eq('email', data.client_email)
@@ -54,7 +55,7 @@ export const createBooking = async (data: CreateBookingData) => {
 
     if (!existingClient) {
       // Crear nuevo cliente global (sin user_id)
-      const { data: newClient, error: createClientError } = await supabase
+      const { data: newClient, error: createClientError } = await supabaseAdmin
         .from('clients')
         .insert({
           name: data.client_name,
@@ -71,7 +72,7 @@ export const createBooking = async (data: CreateBookingData) => {
     } else {
       // Actualizar información del cliente si es necesario
       if (existingClient.name !== data.client_name || existingClient.phone !== data.client_phone) {
-        const { error: updateError } = await supabase
+        const { error: updateError } = await supabaseAdmin
           .from('clients')
           .update({
             name: data.client_name,
@@ -86,7 +87,7 @@ export const createBooking = async (data: CreateBookingData) => {
     }
 
     // Obtener la duración y precio del servicio
-    const { data: service, error: serviceError } = await supabase
+    const { data: service, error: serviceError } = await supabaseAdmin
       .from('services')
       .select('duration, price')
       .eq('id', data.service_id)
@@ -103,7 +104,7 @@ export const createBooking = async (data: CreateBookingData) => {
     // Calcular end_time sumando la duración del servicio
     const endTime = new Date(startTime.getTime() + service.duration * 60000) // duración en minutos * 60000 ms
 
-    const { data: newReservation, error: createReservationError } = await supabase
+    const { data: newReservation, error: createReservationError } = await supabaseAdmin
       .from('reservations')
       .insert({
         client_id: clientId,
@@ -123,7 +124,7 @@ export const createBooking = async (data: CreateBookingData) => {
     if (!newReservation) throw new Error('Error creating reservation')
 
     // Obtener los datos completos del servicio y profesional para el correo
-    const { data: serviceData, error: serviceDataError } = await supabase
+    const { data: serviceData, error: serviceDataError } = await supabaseAdmin
       .from('services')
       .select('*')
       .eq('id', data.service_id)
@@ -132,7 +133,7 @@ export const createBooking = async (data: CreateBookingData) => {
     if (serviceDataError) throw serviceDataError
     if (!serviceData) throw new Error('Service not found')
 
-    const { data: professionalData, error: professionalDataError } = await supabase
+    const { data: professionalData, error: professionalDataError } = await supabaseAdmin
       .from('professionals')
       .select('*')
       .eq('id', data.professional_id)
@@ -155,7 +156,7 @@ export const createBooking = async (data: CreateBookingData) => {
       user_id: data.user_id,
       client_name: data.client_name,
       client_email: data.client_email,
-      date: startTime
+      date: startTime,
     }
 
     await sendBookingConfirmationEmail(reservation, serviceData, professionalData)
@@ -181,7 +182,7 @@ export const getAvailableTimeSlots = async (
 ) => {
   try {
     // Obtener el servicio para saber su duración
-    const { data: service, error: serviceError } = await supabase
+    const { data: service, error: serviceError } = await supabaseAdmin
       .from('services')
       .select('duration')
       .eq('id', serviceId)
@@ -193,7 +194,7 @@ export const getAvailableTimeSlots = async (
 
     // Validar que el profesional pertenezca al usuario y esté asignado al servicio
     // Obtener el perfil del usuario para el min_booking_hours
-    const { data: profile, error: profileError } = await supabase
+    const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
       .select('min_booking_hours')
       .eq('id', userId)
@@ -201,7 +202,7 @@ export const getAvailableTimeSlots = async (
 
     if (profileError) throw profileError
 
-    const { data: professional, error: professionalError } = await supabase
+    const { data: professional, error: professionalError } = await supabaseAdmin
       .from('professionals')
       .select('id, professional_services!inner(*)')
       .eq('id', professionalId)
@@ -220,7 +221,7 @@ export const getAvailableTimeSlots = async (
 
     // Obtener los horarios laborales para el día de la semana
     const dayOfWeek = date.getDay()
-    const { data: schedules, error: schedulesError } = await supabase
+    const { data: schedules, error: schedulesError } = await supabaseAdmin
       .from('professional_schedules')
       .select('*')
       .eq('professional_id', professionalId)
@@ -237,7 +238,7 @@ export const getAvailableTimeSlots = async (
     }
 
     // Obtener los bloqueos para este día
-    const { data: blocks, error: blocksError } = await supabase
+    const { data: blocks, error: blocksError } = await supabaseAdmin
       .from('professional_blocks')
       .select('*')
       .eq('professional_id', professionalId)
@@ -247,7 +248,7 @@ export const getAvailableTimeSlots = async (
     if (blocksError) throw blocksError
 
     // Obtener las reservas existentes
-    const { data: existingReservations, error: reservationsError } = await supabase
+    const { data: existingReservations, error: reservationsError } = await supabaseAdmin
       .from('reservations')
       .select('start_time, end_time')
       .eq('professional_id', professionalId)
@@ -260,26 +261,29 @@ export const getAvailableTimeSlots = async (
     const slots: string[] = []
     const slotDuration = service.duration
 
-    // Para cada horario laboral del día
-    for (const schedule of schedules) {
-      const [startHour, startMinute] = schedule.start_time.split(':').map(Number)
-      const [endHour, endMinute] = schedule.end_time.split(':').map(Number)
+    try {
+      // Para cada horario laboral del día
+      for (const schedule of schedules) {
+        const [startHour, startMinute] = schedule.start_time.split(':').map(Number)
+        const [endHour, endMinute] = schedule.end_time.split(':').map(Number)
 
+        // Convertir horarios a minutos totales para facilitar el cálculo
+        const startTimeInMinutes = startHour * 60 + startMinute
+        const endTimeInMinutes = endHour * 60 + endMinute
 
-      // Generar slots dentro del horario laboral
-      for (let hour = startHour; hour <= endHour; hour++) {
-        // Para la última hora, solo generar slots que terminen antes o en el horario de fin
-        const maxMinute = hour === endHour ? endMinute - slotDuration : 59
-        const minMinute = hour === startHour ? startMinute : 0
-
-        // Solo generar slots si hay suficiente tiempo para el servicio
-        if (maxMinute >= minMinute) {
-          for (let minute = minMinute; minute <= maxMinute; minute += slotDuration) {
-            const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`
-            const slotDate = new Date(date)
-            slotDate.setHours(hour, minute, 0, 0)
-            const slotEnd = new Date(slotDate.getTime() + service.duration * 60000)
-          
+        // Generar slots dentro del horario laboral
+        for (
+          let currentMinute = startTimeInMinutes;
+          currentMinute <= endTimeInMinutes - slotDuration;
+          currentMinute += slotDuration
+        ) {
+          const hour = Math.floor(currentMinute / 60)
+          const minute = currentMinute % 60
+          const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`
+          const slotDate = new Date(date)
+          slotDate.setHours(hour, minute, 0, 0)
+          const slotEnd = new Date(slotDate.getTime() + service.duration * 60000)
+            
           // Validar el tiempo mínimo de antelación según el perfil
           const now = new Date()
           const minBookingTime = profile?.min_booking_hours || 0
@@ -297,7 +301,7 @@ export const getAvailableTimeSlots = async (
           }
 
           // Verificar si el slot está dentro de algún bloqueo
-          const isBlocked = blocks?.some(block => {
+          const isBlocked = blocks?.some((block: ProfessionalBlock) => {
             const blockStart = new Date(block.start_date)
             const blockEnd = new Date(block.end_date)
             return (
@@ -309,7 +313,7 @@ export const getAvailableTimeSlots = async (
           if (isBlocked) continue
 
           // Verificar si el slot está disponible (no hay reservas)
-          const isAvailable = !existingReservations?.some(reservation => {
+          const isAvailable = !existingReservations?.some((reservation) => {
             const reservationStart = new Date(reservation.start_time)
             const reservationEnd = new Date(reservation.end_time)
             return (
@@ -318,18 +322,22 @@ export const getAvailableTimeSlots = async (
             )
           })
 
-
-            if (isAvailable) {
-              slots.push(timeString)
-            }
+          if (isAvailable) {
+            slots.push(timeString)
           }
         }
       }
-    }
 
-    return {
-      success: true,
-      data: slots.sort(),
+      return {
+        success: true,
+        data: slots.sort(),
+      }
+    } catch (error) {
+      console.error('Error generating time slots:', error)
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Error al generar horarios disponibles'
+      }
     }
   } catch (error) {
     console.error('Error getting available time slots:', error)
