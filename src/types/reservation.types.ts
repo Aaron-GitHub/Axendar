@@ -14,7 +14,10 @@ export interface Reservation {
   clients: Client
   services: Service
   professionals: Professional
+  client_name: string
+  client_email: string
 }
+
 
 export interface Client {
   id: string

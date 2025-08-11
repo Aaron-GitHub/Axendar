@@ -1,7 +1,7 @@
 import { Star, CheckCircle, Sparkles } from "lucide-react";
 import { UseFormReturn } from "react-hook-form";
 import Button from "../ui/Button";
-import { defaultPlans, PricingPlan } from "../landing/PricingSection";
+import { defaultPlans, PricingPlan } from "../../constants/plans";
 
 interface PlanSelectionStepProps {
   form: UseFormReturn<{ selectedPlan: string }>;

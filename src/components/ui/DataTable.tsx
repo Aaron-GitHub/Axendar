@@ -76,7 +76,7 @@ export function DataTable<TData>({
   }, [rowSelection, onRowSelectionChange])
 
   return (
-    <div className="space-y-4 w-full max-w-[1200px] mx-auto overflow-hidden">
+    <div className="space-y-4 w-full mx-auto overflow-hidden">
       <div className="px-1 flex items-center gap-2">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />

@@ -7,15 +7,17 @@ import Button from '../components/ui/Button'
 import Modal from '../components/ui/Modal'
 import ConfirmationModal from '../components/ui/ConfirmationModal'
 import ClientForm from '../components/clients/ClientForm'
-import { IconSearch, IconDownload, IconPlus, IconUsers, IconEdit, IconTrash } from '../components/ui/Icons'
+import { IconSearch, IconDownload, IconPlus, IconUsers, IconEdit } from '../components/ui/Icons'
 import toast from 'react-hot-toast'
 import { DataTable } from '../components/ui/DataTable'
 import { ColumnDef } from '@tanstack/react-table'
+import { useIsLg } from '../hooks/useBreakpoint'
 
 const Clients: React.FC = () => {
-  // Definición de columnas para la tabla
-  const columns = useMemo<ColumnDef<Client>[]>(
-    () => [
+  const isLg = useIsLg()
+  // Definición de columnas para la tabla (responsive)
+  const columns = useMemo<ColumnDef<Client>[]>(() => {
+    const baseCols: ColumnDef<Client>[] = [
       {
         accessorKey: 'name',
         header: 'Cliente',
@@ -34,6 +36,9 @@ const Clients: React.FC = () => {
           </div>
         ),
       },
+    ]
+
+    const desktopOnly: ColumnDef<Client>[] = [
       {
         accessorKey: 'email',
         header: 'Contacto',
@@ -60,29 +65,38 @@ const Clients: React.FC = () => {
           </div>
         ),
       },
-      {
-        id: 'actions',
-        header: 'Acciones',
-        cell: ({ row }) => (
-          <div className="flex items-center justify-end space-x-2">
-            <button
-              onClick={() => handleEditClient(row.original)}
-              className="text-primary-600 hover:text-primary-900"
-            >
-              <IconEdit className="h-5 w-5" />
-            </button>
-            <button
-              onClick={() => handleDeleteClient(row.original)}
-              className="text-red-600 hover:text-red-900"
-            >
-              <IconTrash className="h-5 w-5" />
-            </button>
+    ]
+
+    const actionsCol: ColumnDef<Client> = {
+      id: 'actions',
+      header: 'Acciones',
+      cell: ({ row }) => (
+        <div className="px-2 py-1">
+          <div className={`flex items-center ${isLg ? 'justify-end space-x-2' : 'justify-end'}`}>
+            {isLg ? (
+              <button
+                onClick={() => handleEditClient(row.original)}
+                className="text-primary-600 hover:text-primary-900"
+                aria-label="Editar cliente"
+              >
+                <IconEdit className="h-5 w-5" />
+              </button>
+            ) : (
+              <button
+                onClick={() => handleEditClient(row.original)}
+                className="h-10 w-10 inline-flex items-center justify-center rounded-full border border-gray-300 bg-white text-primary-700 hover:bg-gray-50 active:bg-gray-100"
+                aria-label="Editar cliente"
+              >
+                <IconEdit className="h-5 w-5" />
+              </button>
+            )}
           </div>
-        ),
-      },
-    ],
-    []
-  )
+        </div>
+      ),
+    }
+
+    return isLg ? [...baseCols, ...desktopOnly, actionsCol] : [...baseCols, actionsCol]
+  }, [isLg])
 
   const { user } = useAuthContext()
   const [clients, setClients] = useState<Client[]>([])
@@ -137,18 +151,37 @@ const Clients: React.FC = () => {
 
     setLoading(true)
     try {
-      // Obtener todos los clientes que han hecho reservas con este negocio
-      const { data, error } = await supabase
+      // 1) Clientes propios
+      console.log(user.id)
+      const { data: ownClients, error: ownErr } = await supabase
         .from('clients')
-        .select('*, reservations!inner(*)')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+
+      if (ownErr) throw ownErr
+
+      // 2) Clientes con reservas del negocio
+      const { data: reservedClients, error: resErr } = await supabase
+        .from('clients')
+        .select('*, reservations!inner(user_id)')
         .eq('reservations.user_id', user.id)
         .order('created_at', { ascending: false })
 
-      if (error) throw error
-      
-      // Asegurarnos de que los datos cumplen con el tipo Client[]
-      const typedData = (data || []) as Client[]
-      setClients(typedData)
+      if (resErr) throw resErr
+
+      // 3) Unir y deduplicar por id
+      const combined = [
+        ...((ownClients || []) as Client[]),
+        ...((reservedClients || []) as Client[]),
+      ]
+      const deduped = Object.values(
+        combined.reduce<Record<string, Client>>((acc, c) => {
+          acc[c.id] = acc[c.id] || c
+          return acc
+        }, {})
+      )
+      setClients(deduped)
     } catch (error) {
       console.error('Error fetching clients:', error)
       toast.error('Error al cargar los clientes')
@@ -167,10 +200,10 @@ const Clients: React.FC = () => {
     setIsFormModalOpen(true)
   }
 
-  const handleDeleteClient = async (client: Client) => {
+  /*const handleDeleteClient = async (client: Client) => {
     setClientToDelete(client)
     setShowDeleteConfirmation(true)
-  }
+  }*/
 
   const confirmDeleteClient = async () => {
     if (!clientToDelete || !user) return
@@ -256,64 +289,68 @@ const Clients: React.FC = () => {
   return (
     <div className="space-y-6">
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center">
-              <div className="bg-primary-100 p-3 rounded-lg">
-                <IconUsers className="h-6 w-6 text-primary-600" />
+
+      <div className="mb-2 bg-white p-2 rounded-lg shadow-sm border border-gray-200">
+        {/* Encabezado + Acciones */}
+        <div className="flex items-center justify-between gap-2">
+          {/* KPIs compactos (siempre compactos; ocupan una sola línea) */}
+          <div className="-mx-1 flex-1 overflow-x-auto md:overflow-visible">
+            <div className="px-1 inline-flex gap-2 min-w-max md:min-w-0 md:flex md:flex-wrap">
+              <div className="flex items-center gap-2 rounded-md border border-gray-200 bg-white px-4 py-1 shadow-sm bg-primary-50">
+                <span className="inline-flex h-8 w-8 items-center justify-center rounded bg-primary-100">
+                  <IconUsers className="h-4 w-4 text-primary-600" />
+                </span>
+                <div className="leading-tight">
+                  <p className="text-[12px] uppercase tracking-wide text-gray-500">Total</p>
+                  <p className="text-sm font-semibold text-gray-900">{clients.length}</p>
+                </div>
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Clientes</p>
-                <p className="text-2xl font-bold text-gray-900">{clients.length}</p>
+              <div className="flex items-center gap-2 rounded-md border border-gray-200 bg-white px-4 py-1 shadow-sm">
+                <span className="inline-flex h-6 w-6 items-center justify-center rounded bg-green-100">
+                  <IconUsers className="h-4 w-4 text-green-600" />
+                </span>
+                <div className="leading-tight">
+                  <p className="text-[12px] uppercase tracking-wide text-gray-500">Nuevos</p>
+                  <p className="text-sm font-semibold text-gray-900">{clients.filter(c => {
+                    const d = new Date(c.created_at)
+                    const now = new Date()
+                    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
+                  }).length}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 rounded-md border border-gray-200 bg-white px-4 py-1 shadow-sm">
+                <span className="inline-flex h-6 w-6 items-center justify-center rounded bg-blue-100">
+                  <IconSearch className="h-4 w-4 text-blue-600" />
+                </span>
+                <div className="leading-tight">
+                  <p className="text-[12px] uppercase tracking-wide text-gray-500">Resultados</p>
+                  <p className="text-sm font-semibold text-gray-900">{clients.length}</p>
+                </div>
               </div>
             </div>
           </div>
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center">
-              <div className="bg-green-100 p-3 rounded-lg">
-                <IconUsers className="h-6 w-6 text-green-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Nuevos este mes</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {clients.filter(c => new Date(c.created_at).getMonth() === new Date().getMonth()).length}
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center">
-              <div className="bg-blue-100 p-3 rounded-lg">
-                <IconSearch className="h-5 w-5 text-blue-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Resultados</p>
-                <p className="text-2xl font-bold text-gray-900">{clients.length}</p>
-              </div>
-            </div>
+
+          {/* Acciones */}
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              variant="outline"
+              onClick={handleExportToCSV}
+              disabled={clients.length === 0}
+              className="text-xs md:text-sm gap-1 h-8 px-2"
+            >
+              <IconDownload className="h-4 w-4" />
+              Exportar CSV
+            </Button>
+            <Button onClick={handleNewClient} className="text-xs md:text-sm gap-1 h-8 px-2">
+              <IconPlus className="h-4 w-4" />
+              Nuevo Cliente
+            </Button>
           </div>
         </div>
-
-        {/* Acciones */}
-        <div className="px-6 py-4 border-b border-gray-200 flex flex-wrap items-center justify-end gap-4">
-          <Button
-            variant="outline"
-            onClick={handleExportToCSV}
-            disabled={clients.length === 0}
-          >
-            <IconDownload className="h-5 w-5" />
-            Exportar CSV
-          </Button>
-          <Button onClick={handleNewClient}>
-            <IconPlus className="h-5 w-5" />
-            Nuevo Cliente
-          </Button>
-        </div>
-
-    
-
+        {/* Sin bloque extra en desktop para minimizar altura */}
+      </div>
       {/* Clients Table */}
-      
+     
       <div className="mt-4">
         <DataTable
           columns={columns}

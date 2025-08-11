@@ -60,16 +60,6 @@ export const useStats = (user: User | null) => {
   const generateTrendData = useCallback(() => {
     if (!stats) return
 
-    const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun']
-    const revenueMultipliers = [1, 0.9, 0.85, 1.1, 0.95, 1.2]
-    
-    setRevenueData(
-      months.map((month, index) => ({
-        name: month,
-        revenue: Math.round((stats.monthlyRevenue || 0) * revenueMultipliers[index])
-      }))
-    )
-
     const days = ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom']
     const pendingMultipliers = [0.2, 0.15, 0.18, 0.2, 0.25, 0.3, 0.15]
     const completedMultipliers = [0.15, 0.2, 0.25, 0.15, 0.2, 0.3, 0.2]
@@ -194,7 +184,7 @@ export const useStats = (user: User | null) => {
       const conversionRateChange = calculateChange(conversionRate, prevConversionRate)
       const occupancyRate = stats?.totalReservations ? (stats.completedReservations || 0 / stats.totalReservations || 0 * 100) : 0
 
-      setStats({
+      const newStats = {
         todayRevenue: stats?.todayRevenue || 0,
         monthlyRevenue: stats?.monthlyRevenue || 0,
         totalRevenue,
@@ -215,7 +205,32 @@ export const useStats = (user: User | null) => {
         conversionRateChange,
         occupancyRate,
         clientSatisfaction: 4.8 // TODO: Implementar cálculo real
+      }
+
+      setStats(newStats)
+
+      // Construir revenueData real por mes (últimos 6 meses) a partir de reservas completadas
+      const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+      const now = new Date()
+      const monthsWindow = Array.from({ length: 6 }, (_, i) => {
+        const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1)
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+        return { key, name: monthNames[d.getMonth()] }
       })
+
+      const totalsByMonth: Record<string, number> = {}
+      ;(reservationsStats || []).forEach((r) => {
+        if (r.status !== 'completed' || !r.start_time) return
+        const d = new Date(r.start_time)
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+        if (monthsWindow.find(m => m.key === key)) {
+          totalsByMonth[key] = (totalsByMonth[key] || 0) + (r.total_amount || 0)
+        }
+      })
+
+      setRevenueData(
+        monthsWindow.map(m => ({ name: m.name, revenue: Math.round(totalsByMonth[m.key] || 0) }))
+      )
 
       setLastUpdated(new Date())
     } catch (err) {

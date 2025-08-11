@@ -60,7 +60,7 @@ const Dashboard: React.FC = () => {
   ]
 
   return (
-    <div className="space-y-8 p-4">
+    <div className="space-y-8 p-4 sm:p-6">
       {/* Welcome Section */}
       <div className="bg-gradient-to-r from-primary-500 to-secondary-400 rounded-lg p-6 text-white">
         <h1 className="text-2xl font-bold mb-2">
@@ -94,74 +94,83 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6 sm:mt-8">
         {/* Revenue Chart */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-gray-900">Ingresos Mensuales</h3>
             <div className="text-sm text-gray-500">
               Total: ${stats?.monthlyRevenue?.toLocaleString()}
             </div>
           </div>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={revenueData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+          <ResponsiveContainer width="100%" height={260}>
+            <BarChart data={revenueData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
               <XAxis 
                 dataKey="name" 
                 axisLine={false}
                 tickLine={false}
-                tick={{ fill: '#6b7280' }}
+                tick={{ fill: '#6b7280', fontSize: 11 }}
               />
               <YAxis 
                 axisLine={false}
                 tickLine={false}
-                tick={{ fill: '#6b7280' }}
-                tickFormatter={(value) => `$${value.toLocaleString()}`}
+                tick={{ fill: '#6b7280', fontSize: 11 }}
+                tickFormatter={(value) => `$${Number(value).toLocaleString()}`}
               />
               <Tooltip 
-                formatter={(value) => [`$${value.toLocaleString()}`, 'Ingresos']}
+                formatter={(value) => [`$${Number(value as number).toLocaleString()}`, 'Ingresos']}
                 contentStyle={{
                   backgroundColor: '#fff',
                   border: '1px solid #e5e7eb',
                   borderRadius: '0.5rem',
-                  padding: '0.75rem'
+                  padding: '0.5rem 0.75rem'
                 }}
               />
               <Bar 
                 dataKey="revenue" 
                 fill="#338B85"
-                radius={[4, 4, 0, 0]}
-                maxBarSize={50}
+                radius={[6, 6, 0, 0]}
+                maxBarSize={36}
               />
             </BarChart>
           </ResponsiveContainer>
         </div>
 
         {/* Reservations Status */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-gray-900">Estado de Reservas</h3>
             <div className="text-sm text-gray-500">
               Total: {stats?.totalReservations?.toLocaleString()} reservas
             </div>
           </div>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={reservationTrends}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
+          <ResponsiveContainer width="100%" height={260}>
+            <BarChart data={reservationTrends} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+              <XAxis 
+                dataKey="name"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: '#6b7280', fontSize: 11 }}
+              />
+              <YAxis 
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: '#6b7280', fontSize: 11 }}
+              />
               <Tooltip 
-                formatter={(value, name) => [value, name]}
+                formatter={(value, name) => [Number(value as number).toLocaleString(), name as string]}
                 contentStyle={{
                   backgroundColor: '#fff',
                   border: '1px solid #e5e7eb',
                   borderRadius: '0.5rem',
-                  padding: '0.75rem'
+                  padding: '0.5rem 0.75rem'
                 }}
               />
-              <Bar dataKey="pending" fill="#FCD34D" name="Pendientes" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="completed" fill="#34D399" name="Completadas" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="cancelled" fill="#F87171" name="Canceladas" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="pending" fill="#FCD34D" name="Pendientes" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="completed" fill="#34D399" name="Completadas" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="cancelled" fill="#F87171" name="Canceladas" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

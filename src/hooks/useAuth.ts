@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { User } from '@supabase/supabase-js'
-import { User as AppUser } from '../types'
+import { User as AppUser } from '../types/index'
 import toast from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
 
@@ -204,6 +204,9 @@ export const useAuth = () => {
 
       const { data: { session } } = await supabase.auth.getSession()
       setUser(session?.user ?? null)
+
+      console.log(session?.user?.id);
+
       await fetchProfile(session?.user?.id ?? '')
       toast.success('¡Bienvenido de vuelta!')
     } catch (error: any) {

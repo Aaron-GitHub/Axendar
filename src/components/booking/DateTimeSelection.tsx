@@ -5,7 +5,7 @@ import { Calendar, Loader2 } from 'lucide-react'
 import moment from 'moment'
 import 'moment/locale/es'
 import { getAvailableTimeSlots } from '../../services/bookingService'
-import { supabase } from '../../lib/supabase'
+import { supabaseAdmin } from '../../lib/supabase'
 
 // Forzar el locale a español globalmente
 moment.locale('es')
@@ -153,7 +153,7 @@ const DateTimeSelection: React.FC<DateTimeSelectionProps> = ({
   // Cargar los horarios del profesional
   useEffect(() => {
     const loadProfessionalSchedules = async () => {
-      const { data: schedules, error } = await supabase
+      const { data: schedules, error } = await supabaseAdmin
         .from('professional_schedules')
         .select('*')
         .eq('professional_id', selectedProfessional.id)
