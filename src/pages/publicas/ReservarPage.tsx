@@ -167,7 +167,9 @@ const ReservarPage: React.FC = () => {
                   <svg className="w-5 h-5 text-gray-400 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
                   </svg>
-                  <a href={userData.website} target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:text-primary-700">
+                  <a href={userData.website} target="_blank" rel="noopener noreferrer" className="hover:text-primary-700"
+                    style={{ color: branding?.booking_primary_color || '#338B85' }}
+                  >
                     {userData.website.replace(/^https?:\/\//, '')}
                   </a>
                 </div>

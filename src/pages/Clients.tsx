@@ -2,16 +2,15 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuthContext } from '../contexts/AuthContext'
 import { Client } from '../types'
-import LoadingSpinner from '../components/ui/LoadingSpinner'
 import Button from '../components/ui/Button'
 import Modal from '../components/ui/Modal'
-import ConfirmationModal from '../components/ui/ConfirmationModal'
 import ClientForm from '../components/clients/ClientForm'
 import { IconSearch, IconDownload, IconPlus, IconUsers, IconEdit } from '../components/ui/Icons'
 import toast from 'react-hot-toast'
 import { DataTable } from '../components/ui/DataTable'
 import { ColumnDef } from '@tanstack/react-table'
 import { useIsLg } from '../hooks/useBreakpoint'
+import ConfirmationModal from '../components/ui/ConfirmationModal'
 
 const Clients: React.FC = () => {
   const isLg = useIsLg()
@@ -100,7 +99,6 @@ const Clients: React.FC = () => {
 
   const { user } = useAuthContext()
   const [clients, setClients] = useState<Client[]>([])
-  const [loading, setLoading] = useState(true)
   const [isFormModalOpen, setIsFormModalOpen] = useState(false)
   const [editingClient, setEditingClient] = useState<Client | null>(null)
   const [clientToDelete, setClientToDelete] = useState<Client | null>(null)
@@ -148,8 +146,7 @@ const Clients: React.FC = () => {
 
   const fetchClients = useCallback(async () => {
     if (!user) return
-
-    setLoading(true)
+  
     try {
       // 1) Clientes propios
       console.log(user.id)
@@ -185,8 +182,6 @@ const Clients: React.FC = () => {
     } catch (error) {
       console.error('Error fetching clients:', error)
       toast.error('Error al cargar los clientes')
-    } finally {
-      setLoading(false)
     }
   }, [user])
 
@@ -276,14 +271,6 @@ const Clients: React.FC = () => {
     }
 
     toast.success('Datos exportados exitosamente')
-  }
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <LoadingSpinner size="lg" />
-      </div>
-    )
   }
 
   return (

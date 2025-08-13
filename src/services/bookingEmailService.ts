@@ -30,27 +30,27 @@ export const sendBookingConfirmationEmail = async (
     <div style="margin: 25px 0; padding: 20px; background: #f8f9fa; border-radius: 8px; border: 1px solid #e9ecef;">
       <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e9ecef;">
         <span style="color:#3a3a3a; font-weight: 800; font-size: 15px; flex: 0 0 120px;">Servicio:</span>
-        <span style="color: #2c3e50; font-weight: 500; font-size: 15px; text-align: right; flex: 1; margin-left: 20px;">${service.name}</span>
+        <span style="color: #2c3e50; font-weight: 500; font-size: 15px; text-align: right; flex: 1; margin-left: 10px;">${service.name}</span>
       </div>
       <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e9ecef;">
         <span style="color:#3a3a3a; font-weight: 800; font-size: 15px; flex: 0 0 120px;">Profesional:</span>
-        <span style="color: #2c3e50; font-weight: 500; font-size: 15px; text-align: right; flex: 1; margin-left: 20px;">${professional.name}</span>
+        <span style="color: #2c3e50; font-weight: 500; font-size: 15px; text-align: right; flex: 1; margin-left: 10px;">${professional.name}</span>
       </div>
       <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e9ecef;">
         <span style="color:#3a3a3a; font-weight: 800; font-size: 15px; flex: 0 0 120px;">Fecha:</span>
-        <span style="color: #2c3e50; font-weight: 500; font-size: 15px; text-align: right; flex: 1; margin-left: 20px;">${formattedDate}</span>
+        <span style="color: #2c3e50; font-weight: 500; font-size: 15px; text-align: right; flex: 1; margin-left: 10px;">${formattedDate}</span>
       </div>
       <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e9ecef;">
         <span style="color:#3a3a3a; font-weight: 800; font-size: 15px; flex: 0 0 120px;">Hora:</span>
-        <span style="color: #2c3e50; font-weight: 500; font-size: 15px; text-align: right; flex: 1; margin-left: 20px;">${formattedTime}</span>
+        <span style="color: #2c3e50; font-weight: 500; font-size: 15px; text-align: right; flex: 1; margin-left: 10px;">${formattedTime}</span>
       </div>
       <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e9ecef;">
         <span style="color:#3a3a3a; font-weight: 800; font-size: 15px; flex: 0 0 120px;">Duración:</span>
-        <span style="color: #2c3e50; font-weight: 500; font-size: 15px; text-align: right; flex: 1; margin-left: 20px;">${service.duration} minutos</span>
+        <span style="color: #2c3e50; font-weight: 500; font-size: 15px; text-align: right; flex: 1; margin-left: 10px;">${service.duration} minutos</span>
       </div>
       <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e9ecef;">
         <span style="color:#3a3a3a; font-weight: 800; font-size: 15px; flex: 0 0 120px;">Precio:</span>  
-        <span style="color: #2c3e50; font-weight: 500; font-size: 15px; text-align: right; flex: 1; margin-left: 20px;">$${service.price}</span>
+        <span style="color: #2c3e50; font-weight: 500; font-size: 15px; text-align: right; flex: 1; margin-left: 10px;">$${service.price}</span>
       </div>
     </div>
   `
@@ -59,19 +59,19 @@ export const sendBookingConfirmationEmail = async (
     <div style="margin: 25px 0; padding: 20px; background: #f8f9fa; border-radius: 8px; border: 1px solid #e9ecef;">
       <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e9ecef;">
         <span style="color:#3a3a3a; font-weight: 800; font-size: 15px; flex: 0 0 120px;">Empresa:</span>
-        <span style="color: #2c3e50; font-weight: 500; font-size: 15px; text-align: right; flex: 1; margin-left: 20px;">${profile?.company_name || 'No especificada'}</span>
+        <span style="color: #2c3e50; font-weight: 500; font-size: 15px; text-align: right; flex: 1; margin-left: 10px;">${profile?.company_name || 'No especificada'}</span>
       </div>
       <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e9ecef;">
         <span style="color:#3a3a3a; font-weight: 800; font-size: 15px; flex: 0 0 120px;">Dirección:</span>
-        <span style="color: #2c3e50; font-weight: 500; font-size: 15px; text-align: right; flex: 1; margin-left: 20px;">${profile?.address || 'No especificada'}</span>
+        <span style="color: #2c3e50; font-weight: 500; font-size: 15px; text-align: right; flex: 1; margin-left: 10px;">${profile?.address || 'No especificada'}</span>
       </div>
       <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e9ecef;">
         <span style="color:#3a3a3a; font-weight: 800; font-size: 15px; flex: 0 0 120px;">Teléfono:</span>
-        <span style="color: #2c3e50; font-weight: 500; font-size: 15px; text-align: right; flex: 1; margin-left: 20px;">${profile?.phone || 'No especificado'}</span>
+        <span style="color: #2c3e50; font-weight: 500; font-size: 15px; text-align: right; flex: 1; margin-left: 10px;">${profile?.phone || 'No especificado'}</span>
       </div>
       <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e9ecef;">
         <span style="color:#3a3a3a; font-weight: 800; font-size: 15px; flex: 0 0 120px;">Sitio web:</span>
-        <span style="color: #2c3e50; font-weight: 500; font-size: 15px; text-align: right; flex: 1; margin-left: 20px;">${profile?.website || 'No especificado'}</span>
+        <span style="color: #2c3e50; font-weight: 500; font-size: 15px; text-align: right; flex: 1; margin-left: 10px;">${profile?.website || 'No especificado'}</span>
       </div>
     </div>
   `
@@ -83,8 +83,8 @@ export const sendBookingConfirmationEmail = async (
       title: '¡Tu reserva ha sido confirmada!',
       name: reservation.client_name,
       message: `Gracias por reservar con ${profile?.company_name || 'nosotros'}. A continuación encontrarás los detalles de tu cita:`,
-      //actionUrl: `${window.location.origin}/reservas/${reservation.id}`,
-      //actionText: 'Ver Detalles de la Reserva',
+      actionUrl: `${window.location.origin}/reservacliente/${reservation.id}`,
+      actionText: 'Ver Detalles de la Reserva',
       sections: [
         {
           title: 'Detalles de la Reserva',

@@ -26,35 +26,7 @@ interface DateTimeSelectionProps {
   profile_color: string
 }
 
-const dayTranslations: { [key: string]: string } = {
-  'lu': 'Lun',
-  'ma': 'Mar',
-  'mi': 'Mié',
-  'ju': 'Jue',
-  'vi': 'Vie',
-  'sa': 'Sáb',
-  'do': 'Dom'
-}
-
-const monthTranslations: { [key: string]: string } = {
-  'january': 'Enero',
-  'february': 'Febrero',
-  'march': 'Marzo',
-  'april': 'Abril',
-  'may': 'Mayo',
-  'june': 'Junio',
-  'july': 'Julio',
-  'august': 'Agosto',
-  'september': 'Septiembre',
-  'october': 'Octubre',
-  'november': 'Noviembre',
-  'december': 'Diciembre'
-}
-
-const formatMonth = (date: moment.Moment) => {
-  const month = date.format('MMMM').toLowerCase()
-  return monthTranslations[month] || month.charAt(0).toUpperCase() + month.slice(1)
-}
+import { dayTranslations, formatMonth } from '../../utils/esCalendar'
 
 const getLocalizedWeekdays = () => {
   const weekDays = ['lu', 'ma', 'mi', 'ju', 'vi', 'sa', 'do']
