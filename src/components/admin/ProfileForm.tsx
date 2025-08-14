@@ -8,7 +8,7 @@ import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../hooks/useAuth'
 import { User } from '../../types/index'
 import { Building2 } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 const schema = yup.object().shape({
   name: yup.string().required('El nombre es requerido'),
@@ -54,21 +54,40 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ profile, onSave }) => {
     register,
     handleSubmit,
     setValue,
+    reset,
     formState: { errors, isSubmitting }
   } = useForm<ProfileFormData>({
     resolver: yupResolver(schema),
     defaultValues: {
-      name: profile?.name || '',
-      email: profile?.email || '',
-      company_name: profile?.company_name || '',
-      phone: profile?.phone || '',
-      address: profile?.address || '',
-      website: profile?.website || '',
-      logo_url: profile?.logo_url || '',
-      min_booking_hours: profile?.min_booking_hours || 4,
-      min_cancel_hours: profile?.min_cancel_hours || 2
+      name: '',
+      email: '',
+      company_name: '',
+      phone: '',
+      address: '',
+      website: '',
+      logo_url: '',
+      min_booking_hours: 4,
+      min_cancel_hours: 2
     }
   })
+
+  // Actualizar el formulario cuando los datos del perfil estén disponibles
+  useEffect(() => {
+    if (profile) {
+      reset({
+        name: profile.name || '',
+        email: profile.email || '',
+        company_name: profile.company_name || '',
+        phone: profile.phone || '',
+        address: profile.address || '',
+        website: profile.website || '',
+        logo_url: profile.logo_url || '',
+        min_booking_hours: profile.min_booking_hours || 4,
+        min_cancel_hours: profile.min_cancel_hours || 2
+      })
+      setLogoPreview(profile.logo_url || null)
+    }
+  }, [profile, reset])
 
   const handleLogoChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]

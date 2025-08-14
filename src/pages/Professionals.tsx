@@ -320,24 +320,10 @@ const Professionals = () => {
     toast.success('Datos exportados exitosamente')
   }
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
-  }
-
   return (
     <div className="">
-      {loading && !professionals.length ? (
-        <div className="flex justify-center items-center h-64">
-          <LoadingSpinner />
-        </div>
-      ) : (
-        <>
-
-      {/* Header compacto */}
+      <>
+        {/* Header compacto */}
       <div className="mb-2 bg-white p-2 rounded-lg shadow-sm border border-gray-200">
         <div className="flex items-center justify-between gap-2">
           {/* Chips KPI */}
@@ -420,7 +406,6 @@ const Professionals = () => {
           )}
         </div>
         </>
-      )}
 
       <ConfirmationModal
         isOpen={showDeleteConfirmation}

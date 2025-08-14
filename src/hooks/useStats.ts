@@ -12,10 +12,12 @@ export interface Stats {
   completedReservations: number
   pendingReservations: number
   cancelledReservations: number
+  confirmedReservations: number
   totalChange: number
   completedChange: number
   pendingChange: number
   cancelledChange: number
+  confirmedChange: number
   activeClients: number
   activeClientsChange: number
   newClientsThisMonth: number
@@ -117,12 +119,16 @@ export const useStats = (user: User | null) => {
           if (r.status === 'completed') acc.thisMonthCompleted++
           if (r.status === 'pending') acc.thisMonthPending++
           if (r.status === 'cancelled') acc.thisMonthCancelled++
+          if (r.status === 'confirmed') acc.thisMonthConfirmed++
         }
 
         // Contadores del mes anterior
         if (isPrevMonth) {
           acc.prevMonthTotal++
           if (r.status === 'completed') acc.prevMonthCompleted++
+          if (r.status === 'pending') acc.prevMonthPending++
+          if (r.status === 'cancelled') acc.prevMonthCancelled++
+          if (r.status === 'confirmed') acc.prevMonthConfirmed++
         }
 
         // Contadores totales
@@ -130,6 +136,7 @@ export const useStats = (user: User | null) => {
         if (r.status === 'completed') acc.completedReservations++
         if (r.status === 'pending') acc.pendingReservations++
         if (r.status === 'cancelled') acc.cancelledReservations++
+        if (r.status === 'confirmed') acc.confirmedReservations++
 
         return acc
       }, {
@@ -140,12 +147,17 @@ export const useStats = (user: User | null) => {
         thisMonthCompleted: 0,
         thisMonthPending: 0,
         thisMonthCancelled: 0,
+        thisMonthConfirmed: 0,
         prevMonthTotal: 0,
         prevMonthCompleted: 0,
+        prevMonthPending: 0,
+        prevMonthCancelled: 0,
+        prevMonthConfirmed: 0,
         totalReservations: 0,
         completedReservations: 0,
         pendingReservations: 0,
-        cancelledReservations: 0
+        cancelledReservations: 0,
+        confirmedReservations: 0
       })
 
       // Consulta consolidada para clientes
@@ -167,16 +179,22 @@ export const useStats = (user: User | null) => {
       const averageRevenue = stats?.completedReservations ? totalRevenue / stats.completedReservations : 0
 
       const totalChange = calculateChange(stats?.thisMonthTotal || 0, stats?.prevMonthTotal || 0)
-      const completedChange = calculateChange(stats?.thisMonthCompleted || 0, stats?.prevMonthCompleted || 0)
+      const completedChange = calculateChange(
+        stats?.thisMonthCompleted || 0, 
+        ((stats?.prevMonthTotal || 0) - (stats?.prevMonthCompleted || 0))
+      )
       const pendingChange = calculateChange(
         stats?.thisMonthPending || 0,
-        ((stats?.prevMonthTotal || 0) - (stats?.prevMonthCompleted || 0))
+        ((stats?.prevMonthTotal || 0) - (stats?.prevMonthPending || 0))
       )
       const cancelledChange = calculateChange(
         stats?.thisMonthCancelled || 0,
-        ((stats?.prevMonthTotal || 0) - (stats?.prevMonthCompleted || 0))
+        ((stats?.prevMonthTotal || 0) - (stats?.prevMonthCancelled || 0))
       )
-      
+      const confirmedChange = calculateChange(
+        stats?.thisMonthConfirmed || 0,
+        ((stats?.prevMonthTotal || 0) - (stats?.prevMonthConfirmed || 0))
+      )
       const conversionRate = stats?.totalReservations ? 
         ((stats?.completedReservations || 0) / stats.totalReservations) * 100 : 0
       const prevConversionRate = (stats?.prevMonthTotal || 0) > 0 ? 
@@ -194,10 +212,12 @@ export const useStats = (user: User | null) => {
         completedReservations: stats?.completedReservations || 0,
         pendingReservations: stats?.pendingReservations || 0,
         cancelledReservations: stats?.cancelledReservations || 0,
+        confirmedReservations: stats?.confirmedReservations || 0,
         totalChange,
         completedChange,
         pendingChange,
         cancelledChange,
+        confirmedChange,
         activeClients: clientCounts?.activeClients || 0,
         activeClientsChange: 0, // TODO: Implementar cálculo de cambio
         newClientsThisMonth: clientCounts?.newClientsThisMonth || 0,

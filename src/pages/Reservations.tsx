@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useMemo, useState, useCallback, useEffect } from 'react';
+import { dayInitials, formatMonth } from '../utils/esCalendar';
 import moment from 'moment'
 import 'moment/locale/es'
 import { toast } from 'react-hot-toast'
@@ -196,7 +197,7 @@ const Reservations = () => {
       }
 
       // Ordenar por fecha
-      query = query.order('start_time', { ascending: true })
+      query = query.order('start_time', { ascending: false })
 
       // Ejecutar la consulta
       const { data: reservationsData, error: reservationsError } = await query
@@ -562,7 +563,7 @@ const Reservations = () => {
                   >
                     ◀
                   </button>
-                  <span className="text-xs font-medium text-gray-700">{miniMonth.format('MMMM YYYY')}</span>
+                  <span className="text-xs font-medium text-gray-700">{`${formatMonth(miniMonth)} ${miniMonth.format('YYYY')}`}</span>
                   <button
                     type="button"
                     onClick={() => setMiniMonth(prev => prev.clone().add(1, 'month'))}
@@ -572,13 +573,14 @@ const Reservations = () => {
                   </button>
                 </div>
                 <div className="grid grid-cols-7 gap-1 text-center text-[10px] text-gray-500 mb-1">
-                  {['L','M','X','J','V','S','D'].map(d => (
+                  {dayInitials.map(d => (
                     <div key={d} className="py-1">{d}</div>
                   ))}
                 </div>
                 {(() => {
-                  const start = miniMonth.clone().startOf('month').startOf('week')
-                  const end = miniMonth.clone().endOf('month').endOf('week')
+                  // Usar semanas ISO (lunes como primer día) y locale español
+                  const start = miniMonth.clone().locale('es').startOf('month').startOf('isoWeek')
+                  const end = miniMonth.clone().locale('es').endOf('month').endOf('isoWeek')
                   const days: moment.Moment[] = []
                   const cur = start.clone()
                   while (cur.isSameOrBefore(end, 'day')) {
@@ -589,7 +591,7 @@ const Reservations = () => {
                     <div className="grid grid-cols-7 gap-1">
                       {days.map((day) => {
                         const isOtherMonth = day.month() !== miniMonth.month()
-                        const isToday = day.isSame(moment(), 'day')
+                        const isToday = day.isSame(moment().startOf('day'), 'day')
                         const isSelected = filters.startDate && filters.endDate && day.isSame(filters.startDate, 'day') && day.isSame(filters.endDate, 'day')
                         return (
                           <button

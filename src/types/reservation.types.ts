@@ -19,6 +19,29 @@ export interface Reservation {
 }
 
 
+// src/types/reservation.types.ts
+export interface ReservationWithBranding {
+  id: string
+  client_id: string
+  professional_id: string
+  service_id: string
+  start_time: Date | string
+  end_time: Date | string
+  status: 'pending' | 'confirmed' | 'cancelled'
+  notes?: string | null
+  total_amount: number
+  user_id: string
+  date: Date | string
+  clients: Client
+  services: Service
+  professionals: Professional
+  client_name: string
+  client_email: string
+  branding: any
+  profile: any
+}
+
+
 export interface Client {
   id: string
   name: string

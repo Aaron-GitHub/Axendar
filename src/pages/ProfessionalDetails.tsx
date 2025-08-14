@@ -18,7 +18,7 @@ export default function ProfessionalDetails() {
   const { user } = useAuthContext()
   const { showToast } = useToast()
   const [professional, setProfessional] = useState<Professional | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [activeTab, setActiveTab] = useState('datos')
 
@@ -157,31 +157,6 @@ export default function ProfessionalDetails() {
     } finally {
       setSaving(false)
     }
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
-        <div className="max-w-5xl mx-auto">
-          <div className="flex items-center space-x-3 sm:space-x-4">
-            <Button
-              variant="ghost"
-              onClick={() => navigate('/app/professionals')}
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <div className="animate-pulse bg-gray-200 h-7 sm:h-8 w-40 sm:w-48 rounded"></div>
-          </div>
-          <div className="mt-6 sm:mt-8 bg-white shadow rounded-lg p-4 sm:p-6">
-            <div className="animate-pulse space-y-4">
-              <div className="h-4 bg-gray-200 rounded w-1/4"></div>
-              <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
   }
 
   return (
