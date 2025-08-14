@@ -29,17 +29,9 @@ const Dashboard: React.FC = () => {
       name: 'Total Reservas',
       value: (stats?.totalReservations || 0).toString(),
       icon: Calendar,
-      color: 'bg-blue-500',
+      color: 'bg-gray-500',
       change: formatChange(stats?.totalChange),
       changeType: (stats?.totalChange || 0) >= 0 ? 'positive' : 'negative'
-    },
-    {
-      name: 'Reservas Completadas',
-      value: (stats?.completedReservations || 0).toString(),
-      icon: CheckSquare,
-      color: 'bg-green-500',
-      change: formatChange(stats?.completedChange),
-      changeType: (stats?.completedChange || 0) >= 0 ? 'positive' : 'negative'
     },
     {
       name: 'Reservas Pendientes',
@@ -50,13 +42,29 @@ const Dashboard: React.FC = () => {
       changeType: (stats?.pendingChange || 0) >= 0 ? 'positive' : 'negative'
     },
     {
+      name: 'Reservas Confirmadas',
+      value: (stats?.confirmedReservations || 0).toString(),
+      icon: CheckSquare,
+      color: 'bg-blue-600',
+      change: formatChange(stats?.confirmedChange),
+      changeType: (stats?.confirmedChange || 0) >= 0 ? 'positive' : 'negative'
+    },
+    {
+      name: 'Reservas Completadas',
+      value: (stats?.completedReservations || 0).toString(),
+      icon: CheckSquare,
+      color: 'bg-green-500',
+      change: formatChange(stats?.completedChange),
+      changeType: (stats?.completedChange || 0) >= 0 ? 'positive' : 'negative'
+    },
+    {
       name: 'Reservas Canceladas',
       value: (stats?.cancelledReservations || 0).toString(),
       icon: X,
       color: 'bg-red-500',
       change: formatChange(stats?.cancelledChange),
       changeType: (stats?.cancelledChange || 0) >= 0 ? 'positive' : 'negative'
-    }
+    },    
   ]
 
   return (
@@ -71,24 +79,33 @@ const Dashboard: React.FC = () => {
         </p>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         {statCards.map((card, index) => (
-          <div key={index} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6" key={index}>
             <div className="flex items-center justify-between">
-              <div className={`${card.color} bg-opacity-10 p-3 rounded-lg`}>
-                {React.createElement(card.icon, { className: `h-6 w-6 ${card.color.replace('bg-', 'text-')}` })}
+              <div>
+                <p className="text-sm font-medium text-gray-600">{card.name}</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">
+                  {card.value}
+                </p>
               </div>
-              <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full
-                ${card.changeType === 'positive' ? 'bg-green-100 text-green-800' : 
-                  card.changeType === 'negative' ? 'bg-red-100 text-red-800' : 
-                  'bg-gray-100 text-gray-800'
-                }`}>
-                {card.change}
-              </span>
+              <div className={`${card.color} bg-opacity-10 p-3 rounded-lg`}>
+                 {React.createElement(card.icon, { className: `h-6 w-6 ${card.color.replace('bg-', 'text-')}` })}
+              </div>
             </div>
-            <p className="text-sm font-medium text-gray-600 mt-4">{card.name}</p>
-            <p className="text-2xl font-bold text-gray-900 mt-1">{card.value}</p>
-            <p className="text-xs text-gray-500 mt-2">vs mes anterior</p>
+            {/*(() => {
+              const raw = `${card.change ?? ''}`
+              const numeric = parseFloat(raw.replace('%','').replace('+','').replace(',','.'))
+              const progress = isNaN(numeric) ? 0 : Math.max(0, Math.min(100, Math.abs(numeric)))
+              const barColor = card.changeType === 'positive' ? 'bg-green-500 bg-opacity-30' : card.changeType === 'negative' ? 'bg-red-500 bg-opacity-30' : 'bg-yellow-500 bg-opacity-30'
+              return (
+                <div className="mt-4" title={`${card.change} vs mes anterior`}>
+                  <div className="h-1.5 bg-gray-200 rounded">
+                    <div className={`h-1.5 rounded ${barColor}`} style={{ width: `${progress}%` }} />
+                  </div>
+                </div>
+              )
+            })()*/}
           </div>
         ))}
       </div>
@@ -168,9 +185,9 @@ const Dashboard: React.FC = () => {
                   padding: '0.5rem 0.75rem'
                 }}
               />
-              <Bar dataKey="pending" fill="#FCD34D" name="Pendientes" radius={[6, 6, 0, 0]} />
-              <Bar dataKey="completed" fill="#34D399" name="Completadas" radius={[6, 6, 0, 0]} />
-              <Bar dataKey="cancelled" fill="#F87171" name="Canceladas" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="pending" fill="#eab308cc" name="Pendientes" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="completed" fill="#22c55ecc" name="Completadas" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="cancelled" fill="#ef4444cc" name="Canceladas" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

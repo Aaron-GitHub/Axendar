@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
-import { Link, useLocation, Outlet } from 'react-router-dom'
+import { Link, useLocation, Outlet, useNavigate } from 'react-router-dom'
 import { useAuthContext } from '../contexts/AuthContext'
+import { useNotifications } from '../hooks/useNotifications'
 
 interface NavigationSubmenuItem {
   name: string
@@ -28,18 +29,33 @@ import {
   IconLogOut,
   IconMenu,
   IconX,
+  IconBell,
 } from '../components/ui/Icons'
 import logo from '../assets/img/logo.png'
 import logo_icono from '../assets/img/ICONO.png'
 import { PLAN_LABELS } from '../constants/plans'
 
 const Layout: React.FC = () => {
-  const { profile, signOut } = useAuthContext()
+  const { profile, signOut, user } = useAuthContext()
   const location = useLocation()
+  const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   // Modo colapsado para escritorio: solo íconos
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true)
   const [loading, setLoading] = useState(true)
+  const [showNotifications, setShowNotifications] = useState(false)
+  
+  // Use notifications hook
+  const { notifications, unreadCount } = useNotifications(user)
+
+  // Handle notification click
+  const handleNotificationClick = (notification: any) => {
+    if (notification.url) {
+      navigate(notification.url)
+      setShowNotifications(false)
+    }
+  }
+
 
   useEffect(() => {
     setLoading(true)
@@ -97,17 +113,6 @@ const Layout: React.FC = () => {
   ]
 
   const isActive = (href: string) => location.pathname === href
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-primary-500 border-r-transparent mb-4" />
-          <p className="text-gray-600">Cargando...</p>
-        </div>
-      </div>
-    )
-  }
 
   return (
     <div className="min-h-screen">
@@ -259,19 +264,114 @@ const Layout: React.FC = () => {
                 </p>
               </div>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center">
               {!sidebarCollapsed && (
                 <span className="hidden lg:inline text-sm text-gray-600 font-medium">
                   {profile?.company_name || 'Mi Empresa'}
                 </span>
               )}
+
+              {/* Notifications */}
+              <div className="relative mr-4 ml-2">
+                <button
+                  onClick={() => setShowNotifications(!showNotifications)}
+                  className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
+                  title="Notificaciones"
+                >
+                  <IconBell className="h-5 w-5" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-medium">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
+                </button>
+
+                {/* Notifications dropdown */}
+                {showNotifications && (
+                  <>
+                    {/* Backdrop for mobile */}
+                    <div 
+                      className="fixed inset-0 z-10 lg:hidden" 
+                      onClick={() => setShowNotifications(false)}
+                    />
+                    <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-20 max-h-96 overflow-y-auto">
+                      <div className="p-4 border-b border-gray-200">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-lg font-semibold text-gray-900">Notificaciones</h3>
+                          {unreadCount > 0 && (
+                            <span className="text-sm text-gray-500">
+                              {unreadCount} sin leer
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="max-h-64 overflow-y-auto">
+                        {notifications.length > 0 ? (
+                          notifications.map((notification) => (
+                            <div
+                              key={notification.id}
+                              onClick={() => handleNotificationClick(notification)}
+                              className={`p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors ${
+                                notification.unread ? 'bg-blue-50' : ''
+                              } ${notification.url ? 'hover:bg-blue-100' : ''}`}
+                            >
+                              <div className="flex items-start space-x-3">
+                                <div className={`flex-shrink-0 w-2 h-2 rounded-full mt-2 ${
+                                  notification.type === 'success' ? 'bg-green-500' :
+                                  notification.type === 'warning' ? 'bg-yellow-500' :
+                                  notification.type === 'error' ? 'bg-red-500' :
+                                  'bg-blue-500'
+                                }`} />
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center justify-between">
+                                    <p className="text-sm font-medium text-gray-900 truncate">
+                                      {notification.title}
+                                    </p>
+                                    <span className="text-xs text-gray-500 flex-shrink-0 ml-2">
+                                      {notification.time}
+                                    </span>
+                                  </div>
+                                  <p className="text-sm text-gray-600 mt-1">
+                                    {notification.message}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="p-8 text-center">
+                            <IconBell className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                            <p className="text-gray-500">No hay notificaciones</p>
+                          </div>
+                        )}
+                      </div>
+                      {notifications.length > 0 && (
+                        <div className="p-3 border-t border-gray-200">
+                          <button className="w-full text-center text-sm text-primary-600 hover:text-primary-700 font-medium">
+                            Ver todas las notificaciones
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>
 
         {/* Page content */}
         <div className="mx-auto px-4 sm:px-6 lg:px-8 py-4 overflow-x-hidden">
-          <Outlet />
+          {loading ? (
+            <div className="flex items-center justify-center min-h-[400px]">
+              <div className="text-center">
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-primary-500 border-r-transparent mb-4" />
+                <p className="text-gray-600">Cargando...</p>
+              </div>
+            </div>
+          ) : (
+            <Outlet />
+          )}
         </div>
       </main>
     </div>

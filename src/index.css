@@ -77,19 +77,7 @@
   @apply text-white font-semibold;
 }
 
-/* Estilos para mostrar la descripción del evento */
-.event-with-description {
-  @apply relative;
-}
-
-.event-with-description::after {
-  content: attr(data-description);
-  @apply absolute left-0 top-full z-50 hidden w-48 rounded-md bg-gray-800 p-2 text-xs text-white shadow-lg;
-}
-
-.event-with-description:hover::after {
-  @apply block;
-}
+/* Estilos básicos para eventos del calendario */
 
 .fc-event-main {
   @apply p-1 text-sm;

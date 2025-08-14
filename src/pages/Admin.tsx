@@ -23,7 +23,7 @@ interface AdminCardProps {
 const AdminCard: React.FC<AdminCardProps> = ({ title, description, icon: Icon, href, comingSoon }) => {
   const content = (
     <div className={`relative group bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:border-primary-500 transition-colors ${
-      comingSoon ? 'opacity-75' : ''
+      comingSoon ? 'opacity-50 cursor-not-allowed' : ''
     }`}>
       <div className="flex items-center">
         <div className="flex-shrink-0">
@@ -73,18 +73,17 @@ const Admin: React.FC = () => {
       href: '/app/admin/booking-url'
     },
     {
+      title: 'Personalización',
+      description: 'Ajusta los colores y el estilo visual de tu sistema de reservas.',
+      icon: Palette,
+      href: '/app/admin/customization'
+    },
+    {
       title: 'Datos de Financieros',
       description: 'Obtén informes financieros y estadísticas de tu negocio.',
       icon: DollarSign,
       comingSoon: true
-    },
-    {
-      title: 'Personalización',
-      description: 'Ajusta los colores y el estilo visual de tu sistema.',
-      icon: Palette,
-      comingSoon: true
-    },
-    
+    },    
     {
       title: 'Usuarios y Roles',
       description: 'Gestiona los permisos y accesos de tu equipo.',

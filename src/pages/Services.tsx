@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuthContext } from '../contexts/AuthContext'
 import { Service } from '../types'
-import LoadingSpinner from '../components/ui/LoadingSpinner'
 import Button from '../components/ui/Button'
 import Modal from '../components/ui/Modal'
 import ServiceForm from '../components/services/ServiceForm'
@@ -16,7 +15,6 @@ import ConfirmationModal from '../components/ui/ConfirmationModal'
 const Services = () => {
   const { user } = useAuthContext()
   const [services, setServices] = useState<Service[]>([])
-  const [loading, setLoading] = useState(true)
   const [isFormModalOpen, setIsFormModalOpen] = useState(false)
   const [editingService, setEditingService] = useState<Service | null>(null)
   const [serviceToDelete, setServiceToDelete] = useState<string | null>(null)
@@ -157,7 +155,6 @@ const Services = () => {
   const fetchServices = useCallback(async () => {
     if (!user) return
 
-    setLoading(true)
     try {
       const { data, error } = await supabase
         .from('services')
@@ -170,8 +167,6 @@ const Services = () => {
     } catch (error) {
       console.error('Error fetching services:', error)
       toast.error('Error al cargar los servicios')
-    } finally {
-      setLoading(false)
     }
   }, [])
 
@@ -258,14 +253,6 @@ const Services = () => {
     }
 
     toast.success('Datos exportados exitosamente')
-  }
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <LoadingSpinner size="lg" />
-      </div>
-    )
   }
 
   return (

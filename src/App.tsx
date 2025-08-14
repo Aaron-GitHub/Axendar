@@ -19,9 +19,11 @@ import Landing from './pages/publicas/Landing'
 import Onboarding from './pages/publicas/Onboarding'
 import Financial from './pages/admin/Financial'
 import Profile from './pages/admin/Profile'
+import Customization from './pages/admin/Customization'
 import Landing2 from './pages/publicas/Landing2'
 import ProfessionalDetails from './pages/ProfessionalDetails'
 import NotFound from './pages/NotFound'
+import { ReservaView } from './pages/publicas/ReservaView'
 
 // Componente para las rutas protegidas que requieren autenticación
 const PrivateRoutes: React.FC = () => {
@@ -54,6 +56,7 @@ const PrivateRoutes: React.FC = () => {
         <Route path="/admin/booking-url" element={<BookingUrl />} />
         <Route path="/admin/financial" element={<Financial />} />
         <Route path="/admin/profile" element={<Profile />} />
+        <Route path="/admin/customization" element={<Customization />} />
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="*" element={<NotFound />} />
       </Route>
@@ -71,6 +74,7 @@ function App() {
 
         {/* Rutas de reservas */}
         <Route path="/reservar/:userId" element={<ReservarPage />} />
+        <Route path="/reservacliente/:reservaId" element={<ReservaView />} />
         <Route path="/confirmacion" element={<ConfirmacionPage />} />
 
         {/* Ruta de onboarding con autenticación temporal */}

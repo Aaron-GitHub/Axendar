@@ -37,6 +37,11 @@ const staticRoutes = [
 
 // Función para obtener rutas dinámicas basadas en datos de Supabase
 async function getDynamicRoutes() {
+  // Por ahora solo usar rutas estáticas para evitar conflictos con path-to-regexp
+  console.log('Usando solo rutas estáticas para evitar errores de path-to-regexp');
+  return staticRoutes;
+
+  /* TODO: Reactivar rutas dinámicas cuando se resuelva el problema de path-to-regexp
   const routes = [...staticRoutes];
 
   try {
@@ -55,14 +60,18 @@ async function getDynamicRoutes() {
     // Agregar rutas de servicios
     if (services) {
       services.forEach(service => {
-        routes.push(`/services/${service.slug}`);
+        if (service.slug) {
+          routes.push(`/services/${service.slug}`);
+        }
       });
     }
 
     // Agregar rutas de profesionales
     if (professionals) {
       professionals.forEach(professional => {
-        routes.push(`/professionals/${professional.slug}`);
+        if (professional.slug) {
+          routes.push(`/professionals/${professional.slug}`);
+        }
       });
     }
 
@@ -71,6 +80,7 @@ async function getDynamicRoutes() {
     console.error('Error fetching dynamic routes:', error);
     return staticRoutes; // Fallback a rutas estáticas si hay error
   }
+  */
 }
 
 async function prerender() {
@@ -79,15 +89,32 @@ async function prerender() {
   // Obtener todas las rutas (estáticas + dinámicas)
   const routes = await getDynamicRoutes();
   console.log('Rutas a procesar:', routes);
-  // Start a local server to serve the built files
-  console.log('Iniciando servidor local...');
-  const app = express();
+  
   const distDir = resolve(__dirname, 'dist');
-  app.use(express.static(distDir));
   console.log('Directorio de distribución:', distDir);
   
-  // Start server
-  const server = app.listen(5173);
+  // Verificar que el directorio dist existe
+  if (!fs.existsSync(distDir)) {
+    console.error('Error: El directorio dist no existe. Ejecuta "npm run build" primero.');
+    process.exit(1);
+  }
+  
+  // Iniciar servidor Express para servir archivos estáticos
+  console.log('Iniciando servidor local...');
+  const app = express();
+  app.use(express.static(distDir));
+  
+  // Configurar fallback para SPA
+  app.get('*', (req, res) => {
+    res.sendFile(resolve(distDir, 'index.html'));
+  });
+  
+  const server = app.listen(4173, () => {
+    console.log('Servidor iniciado en http://localhost:4173');
+  });
+  
+  // Esperar un momento para que el servidor esté completamente listo
+  await new Promise(resolve => setTimeout(resolve, 2000));
 
   console.log('Iniciando navegador...');
   const browser = await puppeteer.launch({
@@ -102,7 +129,7 @@ async function prerender() {
     console.log(`Pre-rendering: ${route}`);
     
     // Load the page
-    await page.goto(`http://localhost:5173${route}`, {
+    await page.goto(`http://localhost:4173${route}`, {
       waitUntil: 'networkidle0'
     });
     

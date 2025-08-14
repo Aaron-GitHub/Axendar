@@ -7,11 +7,6 @@ import { Reservation } from '../../types'
 import moment from 'moment'
 import { getStatusColor } from '../../utils/statusUtils'
 
-// Importar estilos de FullCalendar 6.1.8
-//import 'node_modules/@fullcalendar/core/main.css'
-//import 'node_modules/@fullcalendar/daygrid/main.css'
-//import 'node_modules/@fullcalendar/timegrid/main.css'
-
 interface CalendarViewProps {
   reservations: Reservation[]
   onEventClick: (reservation: Reservation) => void
@@ -29,11 +24,9 @@ const CalendarView: React.FC<CalendarViewProps> = ({ reservations, onEventClick,
     borderColor: 'transparent',
     textColor: '#ffffff',
     extendedProps: { reservation },
+    // Usar tooltip nativo con información completa
     description: `${reservation.services?.name} - ${reservation.professionals?.name || 'Sin profesional'}`,
-    classNames: [
-      'event-with-description',
-      `status-${reservation.status}`
-    ]
+    classNames: [`status-${reservation.status}`]
   }))
 
   useEffect(() => {
@@ -48,7 +41,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ reservations, onEventClick,
       <FullCalendar
         ref={calendarRef}
         plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-        initialView="timeGridDay"
+        initialView="timeGridWeek"
         initialDate={currentDate}
         headerToolbar={{
           left: 'prev,next today',
@@ -77,14 +70,15 @@ const CalendarView: React.FC<CalendarViewProps> = ({ reservations, onEventClick,
         events={events}
         eventContent={(arg) => {
           return (
-            <div
-              className="event-with-description"
-              data-description={arg.event.extendedProps.description}
-            >
+            <div className="cursor-pointer">
               <div className="fc-event-time">{arg.timeText}</div>
-              <div className="fc-event-title">{arg.event.title}</div>
+              <div className="fc-event-title truncate">{arg.event.title}</div>
             </div>
           )
+        }}
+        eventDidMount={(info) => {
+          // Configurar tooltip nativo con la descripción
+          info.el.setAttribute('title', info.event.extendedProps.description || info.event.title)
         }}
         eventClick={(info) => {
           onEventClick(info.event.extendedProps.reservation)
